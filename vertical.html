@@ -1,17 +1,30 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Hipe Multichat - Vertical v44 Ignore Viewer Updates Fix</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hipe Multichat - Vertical v86 Ignore Viewer Updates Fix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="./assets/css/vertical.css" />
 </head>
+
 <body>
-  <div id="tickerBar">
-    <div id="tickerTrack"></div>
-  </div>
-  <div id="eventOverlay" aria-live="polite"></div>
-  <div id="wsStatus"><span id="wsDot"></span><span id="wsText">Conectando...</span></div>
+  <main id="scene" class="scene" data-position="left">
+    <section id="panel" class="chat-panel">
+      <div id="wsDebug" class="ws-debug"><span class="ws-dot"></span><span id="wsDebugText">WS OFF</span></div>
+      <div id="chatScroll" class="chat-scroll scroll-hidden">
+        <div id="chatStack" class="chat-stack"></div>
+      </div>
+    </section>
+    <div id="connectionStatus" class="connection-status" aria-live="polite">
+      <span class="connection-status-dot"></span>
+      <span id="connectionStatusText" class="connection-status-text">Conectando...</span>
+    </div>
+  </main>
+
   <script src="./assets/js/vertical.js"></script>
 </body>
 </html>

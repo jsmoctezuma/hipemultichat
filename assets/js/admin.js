@@ -102,8 +102,8 @@
         ["tiktok.newSubscribers", bool("ttSocial")]
       ];
 
-      if (mode === "vertical") {
-        const verticalHiddenParams = new Set([
+      if (mode === "horizontal") {
+        const horizontalHiddenParams = new Set([
           "chatBubbles",
           "inlineChat",
           "messageSpacing",
@@ -112,7 +112,7 @@
         ]);
 
         for (let i = params.length - 1; i >= 0; i--) {
-          if (verticalHiddenParams.has(params[i][0])) params.splice(i, 1);
+          if (horizontalHiddenParams.has(params[i][0])) params.splice(i, 1);
         }
       }
 
@@ -164,12 +164,14 @@
         const el = $(id);
         data[id] = el.type === "checkbox" ? el.checked : el.value;
       });
+      data.overlayMode = selectedOverlayMode();
       localStorage.setItem(LS_KEY, JSON.stringify(data));
     }
 
     function load(){
+      let data = {};
       try{
-        const data = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+        data = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
 
         Object.entries(data).forEach(([id, value]) => {
           const el = $(id);
@@ -181,10 +183,9 @@
         console.warn("No se pudo cargar configuración previa", error);
       }
 
-      // El Admin siempre abre por default en Horizontal.
-      // Vertical queda disponible para generar su link, pero no se guarda como estado inicial.
-      $("chatTypeHorizontal").checked = true;
-      $("chatTypeVertical").checked = false;
+      const savedMode = data.overlayMode === "horizontal" ? "horizontal" : "vertical";
+      $("chatTypeHorizontal").checked = savedMode === "horizontal";
+      $("chatTypeVertical").checked = savedMode === "vertical";
     }
 
     function updatePreview(){
@@ -226,11 +227,11 @@
       if (frameTitle) frameTitle.textContent = isVertical ? "Preview vertical" : "Preview horizontal";
       if (frameSub) frameSub.textContent = isVertical ? "Base vertical actual" : "Base horizontal actual";
 
-      // Ocultar solo en UI de Vertical. No se eliminan del HTML ni de fields.
-      // Al volver a Horizontal reaparecen con su valor intacto.
-      setRowVisibility("chatBubbles", !isVertical);
-      setRowVisibility("inlineChat", !isVertical);
-      setFieldVisibility("messageSpacing", !isVertical);
+      // Ocultar solo en UI de Horizontal/ticker. No se eliminan del HTML ni de fields.
+      // Al volver a Vertical/panel reaparecen con su valor intacto.
+      setRowVisibility("chatBubbles", isVertical);
+      setRowVisibility("inlineChat", isVertical);
+      setFieldVisibility("messageSpacing", isVertical);
     }
 
     function handleChatTypeChange(){
@@ -239,9 +240,9 @@
     }
 
     $("copyObsBtnRight").addEventListener("click", () => copyText(buildUrl({ scroll: "hidden", absolute: true }), "URL para OBS"));
-    // NO TOCAR: el panel/dock siempre usa horizontal.html.
-    // Aunque selecciones Vertical, este botón no cambia.
-    $("copyDockBtnTop").addEventListener("click", () => copyText(buildUrl({ forceHorizontal: true, scroll: "hover", opacity: "1", absolute: true }), "URL para panel"));
+    // El panel/dock siempre usa vertical.html porque es el chat en columna.
+    // Aunque selecciones Horizontal/ticker, este botón no cambia.
+    $("copyDockBtnTop").addEventListener("click", () => copyText(buildUrl({ mode: "vertical", scroll: "hover", opacity: "1", absolute: true }), "URL para panel"));
 
     $("chatTypeHorizontal").addEventListener("change", handleChatTypeChange);
     $("chatTypeVertical").addEventListener("change", handleChatTypeChange);
@@ -252,8 +253,9 @@
       el.addEventListener("change", update);
     });
 
-    $("chatTypeHorizontal").checked = true;
-    $("chatTypeVertical").checked = false;
+    // Default para usuarios nuevos: vertical.html es el chat completo/panel.
+    $("chatTypeHorizontal").checked = false;
+    $("chatTypeVertical").checked = true;
     load();
     applyModeVisibility();
     update();

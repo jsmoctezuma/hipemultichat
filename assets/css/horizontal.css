@@ -1,62 +1,26 @@
+
     :root {
-      /* --- Ajuste v116: el chat ocupa todo el canvas/fuente; 800x1080 será recomendación de OBS, no ancho interno --- */
-      --chat-width: 100vw;
-      --chat-height: 100vh;
-      --chat-offset-x: 0px;
-      --chat-offset-y: 0px;
-
-      --panel-r: 48;
-      --panel-g: 51;
-      --panel-b: 52;
-      --panel-opacity: .86;
-
-      --font: Rajdhani, Arial, Helvetica, sans-serif;
-      --name: #1e90ff;
-      --message: rgba(255,255,255,.96);
-      --twitch: #9146ff;
-      --youtube: #ff1f2d;
-      --kick: #53fc18;
-      --purple-2: #a78bfa;
-      --cyan: #41e6ff;
-      --pink: #ff4fa0;
-      --warn: #fbbf24;
-
-      /* --- Ajuste v109: color de acento global para Admin/overlay --- */
+      --bg: #000000;
+      --opacity: 1;
+      --accent: #8b5cf6;
       --accent-r: 139;
       --accent-g: 92;
       --accent-b: 246;
+      --kick: #53fc18;
+      --warn: #fbbf24;
+      --text: #f6f1ff;
+      --muted: rgba(255,255,255,.78);
+      --bar-h: 40px;
+      --font: "Rajdhani", "Arial Narrow", Arial, sans-serif;
+      --font-size: 18px;
+      --time-size: var(--font-size);
+      --avatar: 20px;
+      --badge: 14px;
+      --emote: 20px;
+      --icon: 18px;
+      --gap: 36px;
 
-      --font-size: 26px;
-      --name-size: 28px;
-      --time-size: 20px;
-      /* --- Ajuste v129: valor base real; antes se apuntaba a sí misma hasta que JS lo reemplazaba --- */
-      --line-height: 1.08;
-      --avatar-size: 52px;
-      --event-avatar-size: 52px;
-      --event-platform-size: 27px;
-      --icon-size: 27px;
-      --badge-size: 26px;
-      --row-gap: 17px;
-      --emote-size: 28px;
-      /* v34: tamaño real de emote normal ligado a fontSize, sin tocar PowerUp/Gigantify. */
-      --emote-inline-size: calc(var(--font-size) * 1.12);
-      --emote-large-size: 220px;
-
-      /* --- Ajuste v100: color configurable para chatBubbles --- */
-      --bubble-r: 10;
-      --bubble-g: 12;
-      --bubble-b: 20;
-      --bubble-opacity: .34;
-      --bubble-border-opacity: .08;
-
-      /* --- Ajuste v101: highlight configurable e incluyendo avatar --- */
-      --highlight-r: var(--accent-r);
-      --highlight-g: var(--accent-g);
-      --highlight-b: var(--accent-b);
-      --highlight-opacity: .16;
-      --highlight-glow-opacity: .18;
-
-      /* --- Ajuste v13: gradiente de nombres de eventos fijo, independiente del accentColor --- */
+      /* Vertical v23: gradiente de eventos fijo; no depende del accentColor */
       --name-grad-a: #ff4fa0;
       --name-grad-b: #41e6ff;
       --name-grad-c: #a78bfa;
@@ -64,175 +28,81 @@
 
     * { box-sizing: border-box; }
 
-    html,
-    body {
+    html, body {
       width: 100%;
       height: 100%;
       margin: 0;
-      padding: 0;
       overflow: hidden;
       background: transparent;
       font-family: var(--font);
     }
 
-    .scene {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: transparent;
-    }
+    body { position: relative; }
 
-    .scene[data-debug="1"] {
-      background:
-        linear-gradient(45deg, rgba(255,255,255,.16) 25%, transparent 25%),
-        linear-gradient(-45deg, rgba(255,255,255,.16) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, rgba(255,255,255,.16) 75%),
-        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.16) 75%);
-      background-size: 32px 32px;
-      background-position: 0 0, 0 16px, 16px -16px, -16px 0px;
-      background-color: rgba(0,0,0,.16);
-    }
-
-    .chat-panel {
-      /* --- Ajuste v116: panel/canvas completo; el overlay escala con el tamaño de la fuente OBS --- */
-      position: absolute;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: rgba(var(--panel-r), var(--panel-g), var(--panel-b), var(--panel-opacity));
-    }
-
-    .scene[data-position="right"] .chat-panel,
-    .scene[data-position="center"] .chat-panel {
+    #tickerBar {
+      position: fixed;
       left: 0;
-      right: auto;
-      transform: none;
-    }
-
-    .chat-scroll {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: min(var(--chat-height), 100vh);
-      overflow-y: auto;
-      overflow-x: hidden;
-      display: block;
-      padding: 18px 16px;
-      scroll-behavior: smooth;
-    }
-
-    .chat-stack {
-      min-height: 100%;
+      right: 0;
+      bottom: 0;
+      height: var(--bar-h);
+      overflow: hidden;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      padding: 0 14px;
+      background: rgba(var(--bg-r), var(--bg-g), var(--bg-b), var(--opacity));
+      border-top: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), .42);
+      box-shadow: none;
+    }
+
+    #tickerTrack {
+      width: 100%;
+      height: var(--bar-h);
+      display: flex;
+      align-items: center;
       justify-content: flex-end;
+      gap: var(--gap);
+      overflow: hidden;
+      white-space: nowrap;
     }
 
-    .chat-stack > * + * {
-      margin-top: var(--row-gap);
-    }
-
-    .chat-scroll.scroll-hidden { scrollbar-width: none; }
-    .chat-scroll.scroll-hidden::-webkit-scrollbar { width: 0; height: 0; }
-
-    /* --- Ajuste v132: scrollbar visible usa accentColor del overlay también en Chrome/OBS --- */
-    .chat-scroll.scroll-elegant,
-    .chat-scroll.scroll-hover,
-    .chat-scroll.scroll-always {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .46) rgba(255,255,255,.04);
-    }
-
-    .chat-scroll.scroll-elegant::-webkit-scrollbar,
-    .chat-scroll.scroll-hover::-webkit-scrollbar,
-    .chat-scroll.scroll-always::-webkit-scrollbar { width: 10px; }
-
-    .chat-scroll.scroll-elegant::-webkit-scrollbar-track,
-    .chat-scroll.scroll-hover::-webkit-scrollbar-track,
-    .chat-scroll.scroll-always::-webkit-scrollbar-track {
-      background: rgba(255,255,255,.035);
+    .token.highlight-mention {
+      padding: 0 8px;
       border-radius: 999px;
+      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .10);
+      box-shadow: inset 0 0 0 1px rgba(var(--accent-r), var(--accent-g), var(--accent-b), .18);
     }
 
-    .chat-scroll.scroll-elegant::-webkit-scrollbar-thumb,
-    .chat-scroll.scroll-hover::-webkit-scrollbar-thumb,
-    .chat-scroll.scroll-always::-webkit-scrollbar-thumb {
-      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .42);
-      border-radius: 999px;
-    }
-
-    .chat-scroll.scroll-always::-webkit-scrollbar-thumb {
-      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .76);
-      box-shadow: 0 0 12px rgba(var(--accent-r), var(--accent-g), var(--accent-b), .35);
-    }
-
-    .chat-scroll.scroll-elegant::-webkit-scrollbar-thumb:hover,
-    .chat-scroll.scroll-hover::-webkit-scrollbar-thumb:hover,
-    .chat-scroll.scroll-always::-webkit-scrollbar-thumb:hover {
-      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .58);
-    }
-
-    .chat-scroll.scroll-hover:not(:hover) { scrollbar-color: transparent transparent; }
-
-    .chat-scroll.scroll-hover:not(:hover)::-webkit-scrollbar-thumb,
-    .chat-scroll.scroll-hover:not(:hover)::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .chat-row {
-      width: 100%;
-      flex: 0 0 auto;
-      display: grid;
-      grid-template-columns: var(--avatar-size) minmax(0, 1fr);
+    .token {
+      height: var(--bar-h);
+      display: inline-flex;
       align-items: center;
-      column-gap: 10px;
+      gap: calc(var(--font-size) * .34);
       min-width: 0;
-      filter: drop-shadow(0 2px 2px rgba(0,0,0,.42));
-      animation: rowEnter .28s cubic-bezier(.2,.85,.22,1);
-    }
-
-    .chat-row.no-avatar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    @keyframes rowEnter {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .avatar,
-    .avatar-fallback {
-      width: var(--avatar-size);
-      height: var(--avatar-size);
-      border-radius: 999px;
+      max-width: 1320px;
+      overflow: hidden;
+      white-space: nowrap;
       flex: 0 0 auto;
-      object-fit: cover;
-      display: block;
-      background:
-        radial-gradient(circle at 35% 28%, rgba(255,255,255,.82) 0 10%, transparent 11%),
-        linear-gradient(135deg, #7c3aed, #ff4fa0 56%, #41e6ff);
+      color: var(--text);
+      font-size: var(--font-size);
+      line-height: .95;
+      letter-spacing: .005em;
+      text-shadow: 0 2px 1px rgba(0,0,0,.34);
+      animation: tokenIn .24s ease-out both;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
 
-    .message-block {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 3px;
+    @keyframes tokenIn {
+      from { opacity: 0; transform: translateX(34px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
-    .message-head {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 0;
+    @keyframes nameShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
-    /* --- Ajuste v129: hora más compacta, menos cápsula gigante y pegada al texto real --- */
-    .time-pill {
+    .time {
       height: 20px;
       min-width: 0;
       width: fit-content;
@@ -245,1184 +115,261 @@
       background: rgba(255,255,255,.13);
       font-size: var(--time-size);
       line-height: 1;
-      font-weight: 400;
+      font-weight: 800;
       white-space: nowrap;
       flex: 0 0 auto;
+      box-shadow: none;
+      text-shadow: 0 2px 1px rgba(0,0,0,.30);
     }
 
-    .platform-icon,
-    .badge-icon {
+    .avatar, .avatarFallback {
+      width: var(--avatar);
+      height: var(--avatar);
+      min-width: var(--avatar);
+      min-height: var(--avatar);
+      max-width: var(--avatar);
+      max-height: var(--avatar);
+      border-radius: 999px;
+      object-fit: cover;
       display: inline-grid;
       place-items: center;
-      margin-right: -2px;
-      flex: 0 0 auto;
-      line-height: 0;
-      filter: drop-shadow(0 2px 1px rgba(0,0,0,.22));
-    }
-
-    .platform-icon {
-      width: var(--icon-size);
-      height: var(--icon-size);
-    }
-
-    .platform-icon.platform-youtube {
-      width: calc(var(--icon-size) * 1.18);
-      height: var(--icon-size);
-      overflow: visible;
-    }
-
-    .platform-icon.platform-kick {
-      width: var(--icon-size);
-      height: var(--icon-size);
-      overflow: visible;
-    }
-
-
-    .badge-icon {
-      width: var(--badge-size);
-      height: var(--badge-size);
-    }
-
-    .platform-icon svg,
-    .badge-icon svg,
-    .badge-icon img {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: contain;
-    }
-
-    /* v48: badges de rol YouTube tipo Nutty: sin fondos/círculos extra.
-       Usan la misma caja y margen base que Twitch. */
-    .badge-youtube-owner svg,
-    .badge-youtube-moderator svg,
-    .badge-youtube-member svg,
-    .badge-youtube-verified svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-      transform: translateY(-1px);
-    }
-
-    /* v49: YouTube sin badges necesita respirar antes del nombre.
-       Con badges se mantiene compacto para que plataforma + rol se sientan como grupo. */
-    .chat-row.youtube.has-badges .platform-icon {
-      margin-right: 3px;
-      transform: translateY(0);
-    }
-
-    .chat-row.youtube.no-badges .platform-icon {
-      margin-right: 8px;
-      transform: translateY(0);
-    }
-
-    .chat-row.youtube .platform-icon + .badge-icon,
-    .message-flow .platform-icon + .badge-icon {
-      margin-left: 0;
-    }
-
-    .name {
-      min-width: max-content;
-      color: var(--name);
-      font-size: var(--name-size);
-      line-height: .95;
-      font-weight: 800;
-      white-space: nowrap;
-      overflow: visible;
-      flex: 0 0 auto;
-      text-shadow: 0 2px 1px rgba(0,0,0,.36), 0 0 10px rgba(30,144,255,.14);
-    }
-
-    .separator {
-      color: rgba(255,255,255,.90);
-      font-size: var(--font-size);
-      line-height: .95;
-      font-weight: 400;
-      flex: 0 0 auto;
-    }
-
-    /* v50: nombre + ":" funcionan como una sola unidad visual.
-       El gap del header ya no separa el colon del nombre. */
-    .username-wrap {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 3px;
-      flex: 0 0 auto;
-      min-width: max-content;
-      white-space: nowrap;
-    }
-
-    .username-wrap .name,
-    .username-wrap .separator {
-      margin-right: 0;
-    }
-
-    .pronouns {
-      height: 26px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 8px;
-      border-radius: 999px;
-      color: rgba(255,255,255,.82);
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.08);
-      font-size: 16px;
-      line-height: 1;
-      font-weight: 600;
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .message {
-      min-width: 0;
-      color: var(--message);
-      font-size: var(--font-size);
-      line-height: var(--line-height);
-      font-weight: 500;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      flex: 1 1 auto;
-      text-shadow: 0 2px 1px rgba(0,0,0,.34);
-    }
-
-    .message.inline {
-      white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .message-content {
-      min-width: 0;
-      color: var(--message);
-      font-size: var(--font-size);
-      line-height: var(--line-height);
-      font-weight: 500;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      flex: 1 1 auto;
-      text-shadow: 0 2px 1px rgba(0,0,0,.34);
-    }
-
-    .message-content.inline {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* --- Ajuste v99: mensajes consecutivos agrupados en líneas limpias --- */
-    .grouped-message-line {
-      display: flex;
-      align-items: baseline;
-      gap: 7px;
-      min-width: 0;
-      margin-top: 2px;
-      padding-left: 2px;
-    }
-
-    .grouped-message-arrow {
       flex: 0 0 auto;
-      color: rgba(192,132,252,.78);
-      font-size: calc(var(--font-size) * .76);
-      line-height: var(--line-height);
-      font-weight: 800;
-      text-shadow: 0 2px 1px rgba(0,0,0,.34);
-    }
-
-    .grouped-message-line .message-content {
-      display: block;
-      min-width: 0;
-      white-space: normal;
-      overflow: visible;
-      text-overflow: clip;
-      overflow-wrap: anywhere;
-    }
-
-    .message-content.emote-only {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-      line-height: 1;
-    }
-
-    .chat-row.powerup-gigantify .message-head::after {
-      content: "POWER-UP";
-      height: 24px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 8px;
-      border-radius: 999px;
-      color: rgba(255,255,255,.88);
-      background: linear-gradient(90deg, rgba(145,70,255,.55), rgba(255,79,160,.35));
-      border: 1px solid rgba(255,255,255,.10);
-      font-size: 14px;
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: .04em;
-      flex: 0 0 auto;
-    }
-
-    .emote-img {
-      width: auto;
-      height: var(--emote-inline-size);
-      max-width: calc(var(--font-size) * 4.8);
-      vertical-align: middle;
-      object-fit: contain;
-      margin: -0.08em 1px 0;
-      image-rendering: auto;
-      filter: drop-shadow(0 2px 1px rgba(0,0,0,.35));
-    }
-
-    .kick-emote-fallback {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 1.15em;
-      min-height: 1.15em;
-      margin: 0 2px;
-      vertical-align: -0.08em;
-      font-size: 1.08em;
-      line-height: 1;
-    }
-
-
-    /* v37: aire visual entre emojis/emotes consecutivos en mensajes mixtos.
-       No cambia tamaño ni PowerUp/Gigantify; solo evita que queden pegados. */
-    .message-content .emote-img + .emote-img,
-    .message-flow-text .emote-img + .emote-img,
-    .grouped-message-content .emote-img + .emote-img {
-      margin-left: .22em;
-    }
-
-    .message-content.emote-only .emote-img {
-      height: var(--emote-inline-size);
-      max-width: calc(var(--font-size) * 4.8);
-      margin: 0 3px;
-      image-rendering: auto;
-    }
-
-    .message-content.emote-only.big-pixel .emote-img {
-      image-rendering: pixelated;
-    }
-
-
-    .gigantify-effect-row {
-      width: 100%;
-      flex: 0 0 auto;
-      display: block;
-      padding-left: calc(var(--avatar-size) + 10px);
-      animation: rowEnter .28s cubic-bezier(.2,.85,.22,1);
-      filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
-    }
-
-    .gigantify-effect-row .gigantify-content {
-      margin-top: 6px;
-    }
-
-    .chat-row.powerup-gigantify {
-      align-items: start;
-    }
-
-    .chat-row.powerup-gigantify .avatar,
-    .chat-row.powerup-gigantify .avatar-fallback {
-      align-self: start;
-    }
-
-    .chat-row.powerup-gigantify .message-block {
-      justify-content: flex-start;
-      gap: 10px;
-    }
-
-    .gigantify-text-line {
-      margin-top: 4px;
-    }
-
-    .gigantify-inline-emotes {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-      line-height: 1;
-    }
-
-    .gigantify-inline-emotes .emote-img {
-      width: auto;
-      height: calc(var(--emote-size) + 8px);
-      max-width: 120px;
-      margin: 0;
-      object-fit: contain;
-      filter: drop-shadow(0 4px 3px rgba(0,0,0,.28));
-    }
-
-    .gigantify-inline-emotes.big-pixel .emote-img {
-      image-rendering: pixelated;
-    }
-
-    .gigantify-content {
-      display: flex;
-      align-items: flex-start;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-      gap: 12px;
-      min-height: var(--emote-large-size);
-      line-height: 1;
-      padding-top: 6px;
-    }
-
-    .gigantify-content .emote-img {
-      width: var(--emote-large-size);
-      height: var(--emote-large-size);
-      max-width: var(--emote-large-size);
-      max-height: var(--emote-large-size);
-      margin: 0;
-      object-fit: contain;
-      filter: drop-shadow(0 10px 10px rgba(0,0,0,.35));
-    }
-
-    .gigantify-content.big-pixel .emote-img {
-      image-rendering: pixelated;
-    }
-
-    .gigantify-text {
-      display: inline;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.34;
-      font-size: calc(var(--font-size) * 0.98);
-      font-weight: 600;
-      color: rgba(255,255,255,.96);
-      text-shadow: 0 2px 1px rgba(0,0,0,.34);
-    }
-
-    .gigantify-content .gigantify-text {
-      flex: 0 1 auto;
-      min-width: 0;
-      max-width: 100%;
-    }
-
-
-    /* --- Ajuste v102: highlight como cápsula completa, incluyendo avatar --- */
-    .chat-row.highlight-mention {
-      padding: 7px 10px;
-      border-radius: 18px;
-      background: rgba(var(--highlight-r), var(--highlight-g), var(--highlight-b), var(--highlight-opacity));
-      box-shadow: 0 0 18px rgba(var(--highlight-r), var(--highlight-g), var(--highlight-b), var(--highlight-glow-opacity));
-    }
-
-    /* --- Ajuste v103: avatar dentro del highlight sin contorno duro --- */
-    .chat-row.highlight-mention .avatar,
-    .chat-row.highlight-mention .avatar-fallback {
-      box-shadow: 0 0 14px rgba(var(--highlight-r), var(--highlight-g), var(--highlight-b), calc(var(--highlight-glow-opacity) + .02));
-    }
-
-    .chat-row.highlight-mention .message-block {
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-
-    .chat-row.chat-bubble.highlight-mention {
-      background: rgba(var(--highlight-r), var(--highlight-g), var(--highlight-b), calc(var(--highlight-opacity) + .14));
-      border-color: rgba(var(--highlight-r), var(--highlight-g), var(--highlight-b), .22);
-      box-shadow: 0 0 20px rgba(var(--highlight-r), var(--highlight-g), var(--highlight-b), calc(var(--highlight-glow-opacity) + .02));
-    }
-
-    .chat-row.chat-bubble.highlight-mention .message-block {
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-
-
-    .chat-row.reply-message .message-block {
-      padding: 7px 10px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(96,165,250,.16), rgba(139,92,246,.10));
-      box-shadow: 0 0 18px rgba(96,165,250,.12), 0 0 18px rgba(139,92,246,.08);
-    }
-
-    .chat-row.chat-bubble.reply-message {
-      background: linear-gradient(135deg, rgba(30,64,175,.22), rgba(76,29,149,.22));
-      border-color: rgba(96,165,250,.22);
-      box-shadow: 0 0 20px rgba(96,165,250,.12);
-    }
-
-    .chat-row.chat-bubble.reply-message .message-block {
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-
-    .reply-pill {
-      display: inline-flex;
-      align-items: center;
-      height: 19px;
-      padding: 0 7px;
-      border-radius: 999px;
-      border: 1px solid rgba(96,165,250,.34);
-      background: rgba(96,165,250,.14);
-      color: #bfdbfe;
-      font-size: calc(var(--font-size) * .58);
-      font-weight: 900;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      line-height: 1;
-      text-shadow: 0 1px 1px rgba(0,0,0,.5);
-      box-shadow: 0 0 12px rgba(96,165,250,.10);
-      white-space: nowrap;
-    }
-
-    .reply-preview {
-      width: fit-content;
-      max-width: min(620px, 100%);
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin: 1px 0 1px;
-      padding: 4px 8px;
-      border-left: 3px solid rgba(96,165,250,.64);
-      border-radius: 9px;
-      background: rgba(15,23,42,.28);
-      color: rgba(226,232,240,.78);
-      font-size: calc(var(--font-size) * .68);
-      line-height: 1.15;
-      overflow: hidden;
-      text-shadow: 0 1px 1px rgba(0,0,0,.45);
-    }
-
-    .reply-preview-user {
-      color: #bfdbfe;
-      font-weight: 900;
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .reply-preview-text {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-
-    .chat-row.first-message .message-block {
-      padding: 7px 10px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(251,191,36,.18), rgba(139,92,246,.12));
-      box-shadow: 0 0 18px rgba(251,191,36,.13), 0 0 18px rgba(139,92,246,.10);
-    }
-
-    .chat-row.chat-bubble.first-message {
-      background: linear-gradient(135deg, rgba(251,191,36,.16), rgba(76,29,149,.25));
-      border-color: rgba(251,191,36,.22);
-      box-shadow: 0 0 20px rgba(251,191,36,.13);
-    }
-
-    .chat-row.chat-bubble.first-message .message-block {
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-
-    .first-message-pill {
-      display: inline-flex;
-      align-items: center;
-      height: 19px;
-      padding: 0 7px;
-      border-radius: 999px;
-      border: 1px solid rgba(251,191,36,.34);
-      background: rgba(251,191,36,.14);
-      color: #fde68a;
-      font-size: calc(var(--font-size) * .58);
-      font-weight: 900;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      line-height: 1;
-      text-shadow: 0 1px 1px rgba(0,0,0,.5);
-      box-shadow: 0 0 12px rgba(251,191,36,.10);
-      white-space: nowrap;
-    }
-
-    .chat-row.chat-bubble {
-      padding: 8px 11px;
-      border-radius: 18px;
-      border: 1px solid rgba(var(--bubble-r), var(--bubble-g), var(--bubble-b), var(--bubble-border-opacity));
-      background: rgba(var(--bubble-r), var(--bubble-g), var(--bubble-b), var(--bubble-opacity));
-      /* --- Ajuste v110: quitar sombra negra visible de la preview; conservar glow sutil de acento --- */
-      box-shadow: 0 0 16px rgba(var(--accent-r), var(--accent-g), var(--accent-b), .08);
-    }
-
-    .chat-row.chat-bubble .message-block {
-      padding: 0;
-      border-radius: 0;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-
-    .message-media {
-      display: block;
-      max-width: min(440px, 100%);
-      max-height: 260px;
-      margin-top: 8px;
-      border-radius: 12px;
-      object-fit: contain;
-      box-shadow: 0 12px 24px rgba(0,0,0,.24);
-    }
-
-    .link-preview {
-      display: grid;
-      grid-template-columns: 118px minmax(0, 1fr);
-      gap: 11px;
-      align-items: center;
-      max-width: min(560px, 100%);
-      margin-top: 8px;
-      padding: 8px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      /* --- Ajuste v112: preview con color sólido de acento al 0.10, igual que menciones --- */
-      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .10);
-      box-shadow: none;
-      overflow: hidden;
-    }
-
-    .link-preview.youtube-preview {
-      border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .20);
-    }
-
-    .link-preview.twitch-preview {
-      border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .20);
-      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), .10);
-    }
-
-    .link-preview img {
-      width: 118px;
-      height: 66px;
-      border-radius: 9px;
-      object-fit: cover;
-      background: rgba(255,255,255,.08);
-      display: block;
-    }
-
-    .link-preview-title {
-      color: rgba(255,255,255,.94);
-      font-size: 18px;
-      line-height: 1.08;
-      font-weight: 800;
-      overflow-wrap: anywhere;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .link-preview-site {
-      margin-top: 5px;
-      color: rgba(255,255,255,.62);
-      font-size: 14px;
-      line-height: 1;
-      font-weight: 700;
-      overflow-wrap: anywhere;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .link-preview-site::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 1);
-      box-shadow: 0 0 10px rgba(var(--accent-r), var(--accent-g), var(--accent-b), .45);
-      flex: 0 0 auto;
-    }
-
-    .ws-debug {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 50;
-      display: none;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(5,7,17,.78);
-      border: 1px solid rgba(255,255,255,.10);
-      color: rgba(255,255,255,.86);
-      font-size: 13px;
-      line-height: 1;
-      font-weight: 700;
-      letter-spacing: .03em;
-      backdrop-filter: blur(10px);
-      pointer-events: none;
-    }
-
-    .ws-debug.show {
-      display: inline-flex;
-    }
-
-    .ws-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #fb466c;
-      box-shadow: 0 0 10px rgba(251,70,108,.55);
-    }
-
-    .ws-debug.connected .ws-dot {
-      background: #34d399;
-      box-shadow: 0 0 10px rgba(52,211,153,.65);
-    }
-
-    .ws-debug.connecting .ws-dot {
-      background: #fbbf24;
-      box-shadow: 0 0 10px rgba(251,191,36,.65);
-    }
-
-    .event-card {
-      width: 100%;
-      flex: 0 0 auto;
-      /* --- Ajuste v132: evento más compacto; el chat normal no cambia --- */
-      min-height: 80px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      align-items: center;
-      gap: 10px;
-      padding: 10px 42px 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
       background:
-        radial-gradient(circle at 85% 50%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .12), transparent 150px),
-        radial-gradient(circle at 15% 10%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .07), transparent 110px),
-        linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)),
-        rgba(12,12,20,.92);
-      box-shadow: 0 10px 22px rgba(0,0,0,.26), 0 0 18px rgba(var(--accent-r), var(--accent-g), var(--accent-b), .12);
-      overflow: hidden;
-      position: relative;
-      animation: rowEnter .28s cubic-bezier(.2,.85,.22,1);
+        radial-gradient(circle at 35% 28%, rgba(255,255,255,.82) 0 10%, transparent 11%),
+        linear-gradient(135deg, #7c3aed, #ff4fa0 56%, #41e6ff);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.10), 0 3px 8px rgba(0,0,0,.36);
     }
 
-    .event-card.has-avatar {
-      grid-template-columns: var(--event-avatar-size) minmax(0, 1fr);
+    img.avatar {
+      background: transparent !important;
     }
 
-    .event-card.no-avatar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .event-card::before {
-      content: "";
-      position: absolute;
-      left: 0; right: 0; top: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent 0%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .38) 12%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .72) 55%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .38) 100%);
-      opacity: .95;
-    }
-
-    .event-platform-corner {
-      position: absolute;
-      top: 9px;
-      right: 10px;
-      width: var(--event-platform-size);
-      height: var(--event-platform-size);
-      display: grid;
-      place-items: center;
-      z-index: 2;
-    }
-
-    .event-platform-corner svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .event-avatar,
-    .event-avatar-fallback {
-      width: var(--event-avatar-size);
-      height: var(--event-avatar-size);
-      border-radius: 999px;
-      display: block;
-      object-fit: cover;
+    span.avatarFallback {
       background:
         radial-gradient(circle at 35% 28%, rgba(255,255,255,.82) 0 10%, transparent 11%),
         linear-gradient(135deg, #7c3aed, #ff4fa0 56%, #41e6ff);
     }
 
-    /* --- Ajuste v30: títulos de eventos más legibles y responsivos con fontSize --- */
-    .event-title {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      min-width: 0;
-      max-width: 100%;
-      font-size: clamp(18px, calc(var(--font-size) * .96), 25px);
-      line-height: 1.02;
-      font-weight: 800;
-      white-space: normal;
-      flex-wrap: wrap;
-      row-gap: 2px;
-      overflow-wrap: anywhere;
+    .platform {
+      width: var(--icon);
+      height: var(--icon);
+      min-width: var(--icon);
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      line-height: 0;
+      filter: drop-shadow(0 2px 1px rgba(0,0,0,.22));
     }
 
-    /* --- Ajuste v129: los eventos usan acento del overlay, no el color personal del usuario --- */
-    .event-user {
-      color: transparent;
+    .platform svg { width: 100%; height: 100%; display: block; object-fit: contain; }
+
+    /* v36: ajuste visual mínimo exclusivo para YouTube; mantiene lógica intacta y corrige el balance visual del espacio */
+    .platform.youtube { transform: translateY(-1px); margin-right: 3px; }
+
+    .badges {
+      display: inline-flex;
+      align-items: center;
+      gap: calc(var(--font-size) * .20);
+      margin: 0 calc(var(--font-size) * .08);
+      flex: 0 0 auto;
+      line-height: 0;
+    }
+
+    .badges img {
+      width: var(--badge);
+      height: var(--badge);
+      max-width: var(--badge);
+      max-height: var(--badge);
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 2px 1px rgba(0,0,0,.22));
+    }
+
+    .user, .action, .accent, .msg, .muted, .sep {
+      font-size: var(--font-size);
+      line-height: .95;
+      white-space: nowrap;
+    }
+
+    .user {
+      color: var(--name, #c084fc);
+      font-weight: 800;
+      flex: 0 0 auto;
+      min-width: max-content;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 1px rgba(0,0,0,.36);
+    }
+
+    .action, .msg {
+      color: var(--text);
+      font-weight: 650;
+      text-shadow: 0 2px 1px rgba(0,0,0,.34);
+    }
+
+    .action { flex: 0 0 auto; }
+
+    .msg {
+      min-width: 0;
+      max-width: 900px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .accent {
+      color: var(--warn);
+      font-weight: 900;
+      flex: 0 0 auto;
+      text-shadow: 0 2px 1px rgba(0,0,0,.36), 0 0 10px rgba(251,191,36,.18);
+    }
+
+    .muted {
+      color: rgba(255,255,255,.82);
+      font-weight: 650;
+      min-width: 0;
+      max-width: 760px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 1px rgba(0,0,0,.34);
+    }
+
+    .sep {
+      color: rgba(255,255,255,.58);
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .emote {
+      width: var(--emote);
+      height: var(--emote);
+      max-width: var(--emote);
+      max-height: var(--emote);
+      object-fit: contain;
+      vertical-align: middle;
+      margin: 0 calc(var(--font-size) * .10);
+      filter: drop-shadow(0 2px 1px rgba(0,0,0,.35));
+    }
+
+    .emote + .emote {
+      margin-left: calc(var(--font-size) * .16);
+    }
+
+    #eventOverlay {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: var(--bar-h);
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateY(100%);
+    }
+
+    #eventOverlay.active { animation: specialEventLife 5s ease-in-out both; }
+
+    @keyframes specialEventLife {
+      0% { transform: translateY(100%); }
+      14% { transform: translateY(0); }
+      86% { transform: translateY(0); }
+      100% { transform: translateY(100%); }
+    }
+
+    .specialEventCard {
+      width: 100%;
+      height: var(--bar-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: calc(var(--font-size) * .38);
+      padding: 0 26px;
+      color: var(--text);
+      font-size: var(--font-size);
+      line-height: .95;
+      font-weight: 650;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+      text-shadow: 0 2px 1px rgba(0,0,0,.36);
+      background:
+        radial-gradient(circle at 85% 50%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .16), transparent 180px),
+        radial-gradient(circle at 15% 10%, rgba(var(--accent-r), var(--accent-g), var(--accent-b), .09), transparent 120px),
+        linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)),
+        rgba(12,12,20,.96);
+      border-top: 1px solid rgba(255,255,255,.11);
+      box-shadow: none;
+    }
+
+    .specialEventCard .avatar, .specialEventCard .avatarFallback {
+      width: var(--avatar);
+      height: var(--avatar);
+      min-width: var(--avatar);
+      min-height: var(--avatar);
+    }
+
+    .specialEventCard .user,
+    .specialEventCard.chatState .user,
+    .specialEventCard.hypeTrain .user {
+      color: transparent !important;
       background: linear-gradient(120deg, #ffffff 0%, var(--name-grad-b) 38%, var(--name-grad-a) 68%, var(--name-grad-c) 100%);
       background-size: 220% 220%;
       -webkit-background-clip: text;
       background-clip: text;
+      -webkit-text-fill-color: transparent;
       animation: nameShift 6s ease infinite;
-      white-space: nowrap;
-      flex: 0 1 auto;
-      min-width: 0;
-      max-width: 100%;
-      overflow-wrap: anywhere;
+      font-weight: 900;
+      text-shadow: none;
     }
 
-    .event-type {
-      color: rgba(247,245,255,.95);
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .event-title strong {
+    .specialEventCard .accent {
       color: var(--warn);
-      font-weight: 800;
-      white-space: normal;
-      flex: 1 1 auto;
-      min-width: 0;
-      overflow-wrap: anywhere;
+      font-weight: 900;
+      text-shadow: 0 2px 1px rgba(0,0,0,.36), 0 0 10px rgba(251,191,36,.22);
     }
 
-    .event-message {
-      margin-top: 4px;
-      color: rgba(247,245,255,.94);
-      font-size: clamp(13px, calc(var(--font-size) * .66), 16px);
-      line-height: 1.08;
-      font-weight: 500;
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
+    .specialEventCard .msg, .specialEventCard .muted { max-width: 680px; }
 
-    .event-sticker {
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .event-sticker img {
-      width: clamp(64px, 8vw, 96px);
-      height: clamp(64px, 8vw, 96px);
-      object-fit: contain;
-      display: block;
-      filter: drop-shadow(0 8px 14px rgba(0,0,0,.34));
-    }
-
-    /* --- Ajuste v96: evita corte en tarjetas de estado del chat sin afectar eventos normales --- */
-    .event-card.event-chatState .event-title {
-      white-space: normal;
-      flex-wrap: wrap;
-      align-items: baseline;
-      row-gap: 4px;
-      line-height: 1.08;
-    }
-
-    .event-card.event-chatState .event-user,
-    .event-card.event-chatState .event-type {
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .event-card.event-chatState .event-title strong {
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: normal;
-      flex: 1 1 260px;
-      min-width: 0;
-      line-height: 1.08;
-    }
-@keyframes nameShift {
-      0%,100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    /* --- Reply layout v64: independiente, no usa .reply-preview ni .reply-message --- */
-    .reply-outer {
-      grid-column: 1 / -1;
-      width: 100%;
-      min-width: 0;
-      margin: 0 0 5px;
-      padding: 0;
-    }
-
-    .reply-line {
-      width: 100%;
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 9px;
-      border-radius: 7px;
-      background: rgba(128,128,128,.12);
-      color: rgba(255,255,255,.68);
-      font-size: calc(var(--font-size) * .68);
-      line-height: 1.12;
-      font-weight: 600;
-      overflow: hidden;
-      text-shadow: 0 1px 1px rgba(0,0,0,.35);
-    }
-
-    .reply-line-arrow {
-      color: #a78bfa;
-      font-size: calc(var(--font-size) * .72);
-      line-height: 1;
-      flex: 0 0 auto;
-    }
-
-    .reply-line-label {
-      color: rgba(255,255,255,.56);
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .reply-line-user {
-      color: #a78bfa;
-      font-weight: 800;
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .reply-line-sep {
-      color: rgba(255,255,255,.50);
-      flex: 0 0 auto;
-    }
-
-    .reply-line-text {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: rgba(255,255,255,.64);
-      flex: 1 1 auto;
-    }
-
-
-
-    /* --- Reply layout v68: compacto tipo Twitch, dentro del mensaje --- */
-    .message-block > .reply-outer {
-      grid-column: auto !important;
-      width: auto !important;
-      max-width: 100% !important;
-      margin: 1px 0 2px !important;
-      padding: 0 !important;
-    }
-
-    .message-block > .reply-outer .reply-line {
-      width: fit-content !important;
-      max-width: min(560px, 100%) !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 5px !important;
-      padding: 0 !important;
-      border-radius: 0 !important;
-      background: transparent !important;
-      color: rgba(255,255,255,.52) !important;
-      font-size: calc(var(--font-size) * .58) !important;
-      line-height: 1.05 !important;
-      font-weight: 600 !important;
-      overflow: hidden !important;
-      text-shadow: 0 1px 1px rgba(0,0,0,.45) !important;
-      box-shadow: none !important;
-    }
-
-    .message-block > .reply-outer .reply-line-arrow {
-      color: #a78bfa !important;
-      font-size: calc(var(--font-size) * .64) !important;
-      line-height: 1 !important;
-      flex: 0 0 auto !important;
-      opacity: .9 !important;
-    }
-
-    .message-block > .reply-outer .reply-line-label {
-      color: rgba(255,255,255,.50) !important;
-      white-space: nowrap !important;
-      flex: 0 0 auto !important;
-    }
-
-    .message-block > .reply-outer .reply-line-user {
-      color: #c084fc !important;
-      font-weight: 800 !important;
-      white-space: nowrap !important;
-      flex: 0 0 auto !important;
-    }
-
-    .message-block > .reply-outer .reply-line-sep {
-      color: rgba(255,255,255,.42) !important;
-      flex: 0 0 auto !important;
-    }
-
-    .message-block > .reply-outer .reply-line-text {
-      min-width: 0 !important;
-      max-width: 360px !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      white-space: nowrap !important;
-      color: rgba(255,255,255,.50) !important;
-      flex: 1 1 auto !important;
-    }
-
-
-
-    /* --- Ajuste v71: tarjeta completa de reply con avatar incluida --- */
-    .chat-row.reply-row {
-      margin-left: 34px !important;
-      max-width: calc(100% - 34px) !important;
-      padding: 6px 10px 7px 8px !important;
-      border: 1px solid rgba(255,255,255,.16) !important;
-      border-radius: 15px !important;
-      background: rgba(255,255,255,.035) !important;
-      box-shadow: 0 3px 10px rgba(0,0,0,.12) !important;
-      box-sizing: border-box !important;
-    }
-
-    .chat-row.reply-row .message-block > .reply-outer {
-      margin-left: 0 !important;
-      max-width: 100% !important;
-    }
-
-    .chat-row.reply-row .message-block > .reply-outer .reply-line {
-      background: transparent !important;
-      border: 0 !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-    }
-
-
-
-    /* --- Ajuste v72: emotes largos inline y PowerUp sin duplicado pequeño --- */
-    .message-head .message-content.inline {
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 5px !important;
-      min-width: 0 !important;
-      max-width: 100% !important;
-      overflow: visible !important;
-      text-overflow: clip !important;
-      white-space: nowrap !important;
-      flex: 0 1 auto !important;
-    }
-
-    .message-head .message-content.inline .emote-img {
-      flex: 0 0 auto !important;
-      height: var(--emote-inline-size) !important;
-      max-width: calc(var(--font-size) * 4.8) !important;
-      margin: -0.08em 1px 0 !important;
-    }
-
-
-
-    /* --- Ajuste v77: flujo inline real solo para texto normal --- */
-    .chat-row.simple-text-flow .message-block {
-      display: block !important;
-      min-width: 0 !important;
-    }
-
-    .message-flow {
-      min-width: 0;
-      display: block;
-      color: var(--message);
-      font-size: var(--font-size);
-      line-height: var(--line-height);
-      font-weight: 500;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: normal;
-      text-shadow: 0 2px 1px rgba(0,0,0,.34);
-    }
-
-    .message-flow .time-pill,
-    .message-flow .platform-icon,
-    .message-flow .badge-icon,
-    .message-flow .pronouns,
-    .message-flow .username-wrap {
-      display: inline-flex;
-      vertical-align: middle;
-      margin-right: 7px;
-    }
-
-    .message-flow .platform-icon,
-    .message-flow .badge-icon {
-      transform: translateY(2px);
-    }
-
-    .message-flow .username-wrap .name,
-    .message-flow .username-wrap .separator {
-      display: inline-flex;
-      margin-right: 0;
-    }
-
-    /* v57: .message-head usa el mismo espaciado que .message-flow.
-       Esto evita que un mensaje emote-only cambie las distancias entre hora, plataforma y badges. */
-    .message-head > .time-pill,
-    .message-head > .platform-icon,
-    .message-head > .badge-icon,
-    .message-head > .pronouns,
-    .message-head > .username-wrap,
-    .message-head > .first-message-pill,
-    .message-head > .reply-pill {
-      margin-right: 7px;
-    }
-
-    .message-head > .message-content {
-      margin-right: 0;
-    }
-
-    .message-head > .platform-icon,
-    .message-head > .badge-icon {
-      transform: translateY(2px);
-    }
-
-    .message-head > .username-wrap .name,
-    .message-head > .username-wrap .separator {
-      margin-right: 0;
-    }
-
-    .message-flow-text {
-      display: inline;
-      color: var(--message);
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: normal;
-    }
-
-    /* --- Ajuste v120: los emotes dentro del modo inline fluyen con el texto y saltan línea naturalmente --- */
-    .message-flow-text .emote-img {
-      display: inline-block;
-      vertical-align: middle;
-      height: var(--emote-inline-size);
-      max-width: calc(var(--font-size) * 4.8);
-      margin: -0.08em 1px 0;
-    }
-
-
-
-    /* --- Ajuste v82: emote-only cuenta todos y envuelve sin cortar --- */
-    .message-head .message-content.inline.emote-only {
-      display: inline-flex !important;
-      align-items: center !important;
-      flex-wrap: wrap !important;
-      gap: 5px !important;
-      min-width: 80px !important;
-      max-width: 100% !important;
-      white-space: normal !important;
-      overflow: visible !important;
-      text-overflow: clip !important;
-      flex: 1 1 160px !important;
-      margin-top: 0 !important;
-      line-height: 1 !important;
-    }
-
-    .message-head .message-content.inline.emote-only .emote-img {
-      flex: 0 0 auto !important;
-      height: var(--emote-inline-size) !important;
-      max-width: calc(var(--font-size) * 4.8) !important;
-      margin: 0 3px !important;
-    }
-
-
-
-    /* --- Ajuste v83: muchos emotes van abajo para no cortarse --- */
-    .message-block > .message-content.emote-only:not(.inline) {
-      display: flex !important;
-      align-items: center !important;
-      flex-wrap: wrap !important;
-      gap: 8px !important;
-      max-width: 100% !important;
-      white-space: normal !important;
-      overflow: visible !important;
-      text-overflow: clip !important;
-      margin-top: 2px !important;
-      line-height: 1 !important;
-    }
-
-    .message-block > .message-content.emote-only:not(.inline) .emote-img {
-      flex: 0 0 auto !important;
-      height: var(--emote-inline-size) !important;
-      max-width: calc(var(--font-size) * 4.8) !important;
-      margin: 0 3px !important;
-    }
-
-
-
-    /* --- Ajuste v85: nombre YouTube rojo plano ganador #ff4a4a --- */
-    .chat-row.youtube .name {
-      color: #ff4a4a !important;
-      background: none !important;
-      -webkit-background-clip: initial !important;
-      background-clip: initial !important;
-      -webkit-text-fill-color: #ff4a4a !important;
-      text-shadow: 0 2px 1px rgba(0,0,0,.42) !important;
-    }
-
-    /* --- Ajuste v114: burbuja central de estado de conexión Streamer.bot --- */
-    .connection-status {
+    #wsStatus {
       position: fixed;
       left: 50%;
       top: 50%;
-      transform: translate(-50%, -50%) scale(.96);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
+      transform: translate(-50%, -50%);
       min-width: 190px;
       padding: 14px 20px;
       border-radius: 999px;
       background: rgba(5, 7, 17, .86);
-      border: 1px solid rgba(255,255,255,.12);
+      border: 1px solid rgba(251,70,108,.48);
       color: rgba(255,255,255,.96);
-      font-size: 22px;
-      line-height: 1;
-      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font: 900 22px/1 var(--font);
       letter-spacing: .02em;
       text-shadow: 0 2px 1px rgba(0,0,0,.40);
       backdrop-filter: blur(12px);
-      box-shadow: 0 18px 42px rgba(0,0,0,.36);
+      box-shadow: 0 18px 42px rgba(0,0,0,.34), 0 0 28px rgba(251,70,108,.18);
       z-index: 99999;
-      opacity: 0;
-      visibility: hidden;
       pointer-events: none;
+      opacity: 1;
+      visibility: visible;
       transition: opacity .24s ease, transform .24s ease, visibility .24s ease, border-color .24s ease, box-shadow .24s ease;
     }
 
-    .connection-status.is-visible {
-      opacity: 1;
-      visibility: visible;
-      transform: translate(-50%, -50%) scale(1);
+    #wsStatus.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translate(-50%, -50%) scale(.96);
     }
 
-    .connection-status.is-connected {
-      border-color: rgba(52,211,153,.45);
-      box-shadow: 0 18px 42px rgba(0,0,0,.34), 0 0 28px rgba(52,211,153,.18);
-    }
-
-    .connection-status.is-connecting,
-    .connection-status.is-disconnected {
-      border-color: rgba(251,70,108,.48);
-      box-shadow: 0 18px 42px rgba(0,0,0,.34), 0 0 28px rgba(251,70,108,.18);
-    }
-
-    .connection-status-dot {
+    #wsStatus.debugOn { display: inline-flex; }
+    #wsDot {
       width: 14px;
       height: 14px;
       border-radius: 999px;
@@ -1432,15 +379,16 @@
       animation: connectionPulseRed 1.35s ease-out infinite;
     }
 
-    .connection-status.is-connected .connection-status-dot {
+    #wsStatus.ok {
+      border-color: rgba(52,211,153,.45);
+      box-shadow: 0 18px 42px rgba(0,0,0,.34), 0 0 28px rgba(52,211,153,.18);
+    }
+
+    #wsStatus.ok #wsDot {
       background: #34d399;
       box-shadow: 0 0 12px rgba(52,211,153,.72);
       animation-name: connectionPulseGreen;
       animation-duration: 1.1s;
-    }
-
-    .connection-status-text {
-      white-space: nowrap;
     }
 
     @keyframes connectionPulseRed {
@@ -1455,55 +403,59 @@
       100% { box-shadow: 0 0 0 0 rgba(52,211,153,0), 0 0 12px rgba(52,211,153,.72); }
     }
 
-
   
-    .event-title strong .reward-separator {
-      color: rgba(255,255,255,.88);
-      font-weight: 850;
+    .platform.kick {
+      color: #53fc18;
+      font-weight: 900;
+      font-family: Arial, sans-serif;
+      font-size: calc(var(--icon) * .86);
+      line-height: 1;
+      transform: translateY(-1px);
     }
 
-  
-    .event-avatar-platform {
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at 35% 28%, rgba(255,255,255,.18), transparent 42%),
-        linear-gradient(135deg, rgba(124,58,237,.98), rgba(145,70,255,.92));
+    .kick-emote-fallback {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.15em;
+      min-height: 1.15em;
+      margin: 0 2px;
+      vertical-align: -0.08em;
+      font-size: 1.08em;
+      line-height: 1;
     }
 
-    .event-avatar-platform svg {
-      width: 68%;
-      height: 68%;
-      display: block;
+    .token.event.gifts.youtube .muted {
+      color: rgba(255,255,255,.80);
+      font-weight: 700;
     }
 
-    .event-avatar-platform.youtube {
-      background:
-        radial-gradient(circle at 35% 28%, rgba(255,255,255,.22), transparent 42%),
-        linear-gradient(135deg, rgba(255,0,84,.98), rgba(255,45,85,.86));
+
+
+    .reply-preview-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255,255,255,.54);
+      font-size: .82em;
+      font-weight: 700;
+      margin-right: 8px;
+      transform: translateY(-1px);
     }
 
-    .event-title strong .amount-suffix-inline {
-      color: inherit;
-      font-weight: inherit;
+    .reply-preview-inline .reply-user {
+      color: rgba(216,180,254,.88);
+      font-weight: 900;
     }
 
-  
-    .event-avatar-platform.twitch svg,
-    .event-avatar-platform.twitch svg * {
-      fill: #ffffff !important;
+    .reply-preview-inline .reply-text {
+      color: rgba(255,255,255,.50);
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-
-  
-    .event-avatar-system-twitch {
-      object-fit: cover;
-      background: rgba(145,70,255,.18);
-    }
-
-  
-  
-    .event-card.event-chatState .event-type {
-      color: #f6f1ff !important;
-      text-shadow: 0 0 10px rgba(255,255,255,.10);
-    }
-
