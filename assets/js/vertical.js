@@ -317,6 +317,8 @@
       "#fb7185", "#22c55e", "#818cf8", "#fb923c", "#06b6d4", "#e879f9",
       "#84cc16", "#f59e0b", "#14b8a6", "#ec4899", "#93c5fd", "#d946ef"
     ];
+    const youtubeColorByUserKey = new Map();
+    const youtubeUserKeyByColor = new Map();
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -422,7 +424,22 @@
 
       const cleanKey = String(key || "").trim();
       if (!cleanKey) return "";
-      return YOUTUBE_NAME_COLORS[stableStringHash(cleanKey) % YOUTUBE_NAME_COLORS.length];
+
+      const assignedColor = youtubeColorByUserKey.get(cleanKey);
+      if (assignedColor) return assignedColor;
+
+      const preferredIndex = stableStringHash(cleanKey) % YOUTUBE_NAME_COLORS.length;
+      for (let offset = 0; offset < YOUTUBE_NAME_COLORS.length; offset += 1) {
+        const color = YOUTUBE_NAME_COLORS[(preferredIndex + offset) % YOUTUBE_NAME_COLORS.length];
+        const ownerKey = youtubeUserKeyByColor.get(color);
+        if (!ownerKey || ownerKey === cleanKey) {
+          youtubeColorByUserKey.set(cleanKey, color);
+          youtubeUserKeyByColor.set(color, cleanKey);
+          return color;
+        }
+      }
+
+      return YOUTUBE_NAME_COLORS[preferredIndex];
     }
 
     function currentTime() {
