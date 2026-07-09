@@ -5,7 +5,9 @@
     const YOUTUBE_NAME_COLORS = [
       "#ff7f50", "#1e90ff", "#32cd32", "#ff69b4", "#ba55d3", "#00ced1",
       "#ffb000", "#8a2be2", "#00b894", "#e84393", "#f97316", "#38bdf8",
-      "#a3e635", "#f472b6", "#c084fc", "#2dd4bf", "#facc15", "#60a5fa"
+      "#a3e635", "#f472b6", "#c084fc", "#2dd4bf", "#facc15", "#60a5fa",
+      "#fb7185", "#22c55e", "#818cf8", "#fb923c", "#06b6d4", "#e879f9",
+      "#84cc16", "#f59e0b", "#14b8a6", "#ec4899", "#93c5fd", "#d946ef"
     ];
 
     const params = new URLSearchParams(location.search);
