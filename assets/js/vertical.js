@@ -310,6 +310,12 @@
     const chatScroll = document.getElementById("chatScroll");
     const chatStack = document.getElementById("chatStack");
 
+    const YOUTUBE_NAME_COLORS = [
+      "#ff7f50", "#1e90ff", "#32cd32", "#ff69b4", "#ba55d3", "#00ced1",
+      "#ffb000", "#8a2be2", "#00b894", "#e84393", "#f97316", "#38bdf8",
+      "#a3e635", "#f472b6", "#c084fc", "#2dd4bf", "#facc15", "#60a5fa"
+    ];
+
     function escapeHtml(value) {
       return String(value ?? "")
         .replaceAll("&", "&amp;")
@@ -372,6 +378,49 @@
       }
 
       return color;
+    }
+
+    function stableStringHash(value) {
+      const text = String(value || "");
+      let hash = 0;
+      for (let i = 0; i < text.length; i += 1) {
+        hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function getYouTubeUserColor(item = {}) {
+      const realColor = readableNameColor(firstValue(
+        item.nameColor,
+        item.userColor,
+        item.color,
+        item._message && item._message.color,
+        item._message && item._message.nameColor,
+        item._message && item._message.userColor,
+        item._user && item._user.color,
+        item._user && item._user.nameColor,
+        item._user && item._user.userColor,
+        item._data && item._data.color,
+        item._data && item._data.nameColor,
+        item._data && item._data.userColor,
+        item.displayColor
+      ));
+      if (realColor) return realColor;
+
+      const key = firstValue(
+        item.userId,
+        item._data && item._data.user && item._data.user.id,
+        item._user && item._user.id,
+        item.authorChannelId,
+        item._data && item._data.authorChannelId,
+        item.channelId,
+        item._data && item._data.user && item._data.user.channelId,
+        item.username
+      );
+
+      const cleanKey = String(key || "").trim();
+      if (!cleanKey) return "";
+      return YOUTUBE_NAME_COLORS[stableStringHash(cleanKey) % YOUTUBE_NAME_COLORS.length];
     }
 
     function currentTime() {
@@ -4013,6 +4062,19 @@
         payload.user_id
       );
 
+      const rawNameColor = firstValue(
+        messageObj.color,
+        messageObj.nameColor,
+        messageObj.userColor,
+        userObj.color,
+        userObj.nameColor,
+        userObj.userColor,
+        payload.nameColor,
+        payload.userColor,
+        payload.color,
+        payload.displayColor
+      );
+
       const mapped = {
         ...payload,
         platform,
@@ -4044,18 +4106,16 @@
           payload.userProfileImage,
           getConfiguredAvatar(username, userId)
         ),
-        nameColor: firstValue(
-          messageObj.color,
-          messageObj.nameColor,
-          messageObj.userColor,
-          userObj.color,
-          userObj.nameColor,
-          userObj.userColor,
-          payload.nameColor,
-          payload.userColor,
-          payload.color,
-          payload.displayColor
-        ),
+        nameColor: platform === "youtube" ? getYouTubeUserColor({
+          ...payload,
+          platform,
+          username,
+          userId,
+          nameColor: rawNameColor,
+          _data: dataObj,
+          _message: messageObj,
+          _user: userObj
+        }) : rawNameColor,
         badges: [
           ...normalizeBadgeList(firstValue(
             messageObj.badges,

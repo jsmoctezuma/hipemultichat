@@ -2,6 +2,11 @@
     "use strict";
 
     const SYSTEM_TWITCH_AVATAR_URL = "https://static-cdn.jtvnw.net/jtv_user_pictures/7db44749-286f-4db0-9c99-574b16170d44-profile_image-70x70.png";
+    const YOUTUBE_NAME_COLORS = [
+      "#ff7f50", "#1e90ff", "#32cd32", "#ff69b4", "#ba55d3", "#00ced1",
+      "#ffb000", "#8a2be2", "#00b894", "#e84393", "#f97316", "#38bdf8",
+      "#a3e635", "#f472b6", "#c084fc", "#2dd4bf", "#facc15", "#60a5fa"
+    ];
 
     const params = new URLSearchParams(location.search);
     const urlFontSize = params.get("fontSize") ?? params.get("fontsize") ?? params.get("fs");
@@ -624,6 +629,7 @@
         item.userId = first(ytUser.id, ytUser.channelId, data.authorChannelId, item.userId);
         item.avatar = first(ytUser.profileImageUrl, ytUser.profileImage, data.profileImageUrl, item.avatar);
         item.message = first(data.message, data.text, root.message, root.text, "");
+        item.nameColor = getYouTubeUserColor(item);
       }
 
       // Normal messages
@@ -1513,6 +1519,46 @@
       }
 
       return color;
+    }
+
+    function stableStringHash(value) {
+      const text = String(value || "");
+      let hash = 0;
+      for (let i = 0; i < text.length; i += 1) {
+        hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function getYouTubeUserColor(item = {}) {
+      const realColor = readableNameColor(first(
+        item.nameColor,
+        item.userColor,
+        item.color,
+        item.raw && item.raw.nameColor,
+        item.raw && item.raw.userColor,
+        item.raw && item.raw.color,
+        item.raw && item.raw.data && item.raw.data.nameColor,
+        item.raw && item.raw.data && item.raw.data.userColor,
+        item.raw && item.raw.data && item.raw.data.color,
+        item.raw && item.raw.data && item.raw.data.user && item.raw.data.user.color
+      ), "");
+      if (realColor) return realColor;
+
+      const key = first(
+        item.userId,
+        item.raw && item.raw.data && item.raw.data.user && item.raw.data.user.id,
+        item.raw && item.raw.user && item.raw.user.id,
+        item.authorChannelId,
+        item.raw && item.raw.data && item.raw.data.authorChannelId,
+        item.channelId,
+        item.raw && item.raw.data && item.raw.data.user && item.raw.data.user.channelId,
+        item.username
+      );
+
+      const cleanKey = String(key || "").trim();
+      if (!cleanKey) return "";
+      return YOUTUBE_NAME_COLORS[stableStringHash(cleanKey) % YOUTUBE_NAME_COLORS.length];
     }
 
     function resolveReplyInfo(item = {}) {

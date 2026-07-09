@@ -1365,13 +1365,12 @@
 
 
 
-    /* --- Ajuste v85: nombre YouTube rojo plano ganador #ff4a4a --- */
+    /* YouTube usa color inline estable por usuario; no bloquearlo con rojo fijo. */
     .chat-row.youtube .name {
-      color: #ff4a4a !important;
       background: none !important;
       -webkit-background-clip: initial !important;
       background-clip: initial !important;
-      -webkit-text-fill-color: #ff4a4a !important;
+      -webkit-text-fill-color: currentColor !important;
       text-shadow: 0 2px 1px rgba(0,0,0,.42) !important;
     }
 
