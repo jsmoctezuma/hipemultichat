@@ -321,6 +321,21 @@
       const raw = [];
       if (Array.isArray(payload.emotes)) raw.push(...payload.emotes);
       if (Array.isArray(payload.message_emotes)) raw.push(...payload.message_emotes);
+      const powerUp = first(payload.power_up, payload.powerUp, payload.powerup, {});
+      if (powerUp && typeof powerUp === "object" && powerUp.emote) raw.push(powerUp.emote);
+      const messageObj = payload.message && typeof payload.message === "object" ? payload.message : {};
+      if (Array.isArray(messageObj.fragments)) {
+        for (const fragment of messageObj.fragments) {
+          if (fragment && fragment.emote) {
+            raw.push({
+              id: fragment.emote.id,
+              name: first(fragment.text, fragment.emote.name, fragment.emote.id, ""),
+              imageUrl: fragment.emote.id ? `https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(fragment.emote.id)}/default/dark/3.0` : "",
+              type: "Twitch"
+            });
+          }
+        }
+      }
       if (Array.isArray(payload.parts)) {
         for (const part of payload.parts) {
           if (String(part.type || "").toLowerCase() === "emote" || part.imageUrl || part.image) raw.push(part);
@@ -349,6 +364,41 @@
         });
       }
       return out;
+    }
+
+    function getPowerUpSignal(...sources) {
+      const texts = [];
+      sources.forEach((source) => {
+        if (!source || typeof source !== "object") return;
+        if (source.gigantify === true || source.isGigantify === true || source.gigantified === true) {
+          texts.push("gigantify");
+        }
+        const powerUp = first(source.power_up, source.powerUp, source.powerup, {});
+        const powerUpObj = powerUp && typeof powerUp === "object" ? powerUp : {};
+        const messageObj = source.message && typeof source.message === "object" ? source.message : {};
+        texts.push(
+          source.message_type,
+          source.messageType,
+          source.reward_type,
+          source.rewardType,
+          source.powerUpType,
+          source.powerupType,
+          source.power_up_type,
+          source.powerUpName,
+          source.powerupName,
+          source.powerUpTitle,
+          source.eventType,
+          source.type,
+          source.kind,
+          powerUpObj.type,
+          powerUpObj.name,
+          powerUpObj.title,
+          messageObj.message_type,
+          messageObj.messageType
+        );
+      });
+      const joined = texts.filter((value) => value !== undefined && value !== null).join(" ").toLowerCase();
+      return joined.includes("gigantify_an_emote") || joined.includes("power_ups_gigantified_emote") || joined.includes("gigantify") || joined.includes("gigantificar");
     }
 
 
@@ -569,7 +619,7 @@
       const event = unwrapNested ? nestedEvent : rootEvent;
       const data = unwrapNested ? nestedData : rootData;
       const flat = { ...data, ...root };
-      const source = normalizePlatform(first(event.source, root.source, data.source, flat.platform, "twitch"));
+      const source = normalizePlatform(first(root.source, data.platform, data.source, flat.platform, event.source, "twitch"));
       const type = String(first(event.type, root.type, data.type, ""));
       const lower = type.toLowerCase();
 
@@ -626,6 +676,40 @@
         muted: "",
         systemAvatar: ""
       };
+
+      const powerUpSignal = getPowerUpSignal(root, data, messageObj, item);
+
+      if (powerUpSignal) {
+        item.kind = "event";
+        item.category = "powerUps";
+        item.eventType = "PowerUp";
+        item.username = first(
+          item.username,
+          data.user_name,
+          data.userName,
+          data.user_login,
+          userObj.name,
+          userObj.login,
+          "Usuario"
+        );
+        item.userId = first(item.userId, data.user_id, data.userId, userObj.id, "");
+        item.amount = "Emote gigante";
+        item.message = first(
+          data.message_text,
+          data.messageText,
+          data.user_input,
+          data.userInput,
+          data.text,
+          typeof data.message === "string" ? data.message : "",
+          messageObj.text,
+          item.message,
+          item.emotes[0] && item.emotes[0].name,
+          ""
+        );
+        item.emotes = normalizeEmotes(data);
+        registerPowerUpEcho(item);
+        return item;
+      }
 
       if (source === "youtube") {
         const ytUser = first(data.user, root.user, {});
@@ -1017,9 +1101,37 @@
       return `${user}|${msg}`;
     }
 
+    function tokenPowerUpText(node) {
+      if (!node) return "";
+      const part = node.querySelector(".message-part");
+      const text = String(part ? part.textContent : "").replace(/\s+/g, " ").trim().toLowerCase();
+      if (text) return text;
+      return Array.from(node.querySelectorAll("img.emote"))
+        .map((img) => img.alt || img.title || "")
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    function removeExistingPowerUpEcho(item = {}) {
+      const platform = normalizePlatform(item.platform || item.source || "twitch");
+      const user = normalizeChatterToken(item.username || "");
+      const message = String(item.message || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if (!platform || !user || !message) return;
+
+      Array.from(track.querySelectorAll(".token.message"))
+        .slice(-10)
+        .forEach((node) => {
+          if (node.dataset.platform !== platform || node.dataset.user !== user) return;
+          if (tokenPowerUpText(node) === message) node.remove();
+        });
+    }
+
     function registerPowerUpEcho(item = {}) {
       const key = powerUpEchoKey(item);
       if (!key || key === "|") return;
+      removeExistingPowerUpEcho(item);
       powerUpEchoCache.set(key, Date.now() + 4500);
       setTimeout(() => powerUpEchoCache.delete(key), 5000);
     }

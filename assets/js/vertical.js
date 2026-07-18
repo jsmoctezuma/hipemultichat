@@ -930,6 +930,139 @@
       return `<span class="gigantify-text">${escapeHtml(clean)}</span>`;
     }
 
+    function compactPowerUpText(value = "") {
+      return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    const powerUpEchoCache = new Map();
+
+    function powerUpEchoKey(item = {}) {
+      const platform = normalizePlatform(firstValue(item.platform, item.source, "twitch"));
+      const user = compactPowerUpText(firstValue(item.username, item.userName, item.displayName, item.user, ""));
+      const message = compactPowerUpText(firstValue(item.message, item.text, item.rawInput, ""));
+      return `${platform}|${user}|${message}`;
+    }
+
+    function nodePowerUpText(node) {
+      if (!node) return "";
+      const textNode = node.querySelector(".message-flow-text, .message-content:not(.gigantify-text-line)");
+      const text = compactPowerUpText(textNode ? textNode.textContent : "");
+      if (text) return text;
+      return compactPowerUpText(Array.from(node.querySelectorAll("img.emote-img")).map((img) => img.alt || img.title || "").join(" "));
+    }
+
+    function removeExistingPowerUpEcho(item = {}) {
+      const platform = normalizePlatform(firstValue(item.platform, item.source, "twitch"));
+      const user = normalizeChatterToken(firstValue(item.username, item.userName, item.displayName, item.user, ""));
+      const message = compactPowerUpText(firstValue(item.message, item.text, item.rawInput, ""));
+      if (!platform || !user || !message) return;
+
+      Array.from(chatStack.querySelectorAll(".chat-row"))
+        .slice(-8)
+        .forEach((row) => {
+          if (!row || row.classList.contains("powerup-gigantify")) return;
+          if (row.dataset.platform !== platform || row.dataset.user !== user) return;
+          if (nodePowerUpText(row) === message) row.remove();
+        });
+    }
+
+    function registerPowerUpEcho(item = {}) {
+      const key = powerUpEchoKey(item);
+      if (!key || key.endsWith("||")) return;
+      removeExistingPowerUpEcho(item);
+      powerUpEchoCache.set(key, Date.now() + 4500);
+      setTimeout(() => powerUpEchoCache.delete(key), 5000);
+    }
+
+    function isPowerUpEchoMessage(item = {}) {
+      if (!item || item.kind !== "message") return false;
+      const key = powerUpEchoKey(item);
+      const expires = powerUpEchoCache.get(key);
+      if (!expires) return false;
+      if (Date.now() > expires) {
+        powerUpEchoCache.delete(key);
+        return false;
+      }
+      return true;
+    }
+
+    function getPowerUpSignal(...sources) {
+      const texts = [];
+
+      sources.forEach((source) => {
+        if (!source || typeof source !== "object") return;
+        if (source.gigantify === true || source.isGigantify === true || source.gigantified === true) {
+          texts.push("gigantify");
+        }
+        const powerUp = firstValue(source.power_up, source.powerUp, source.powerup, {});
+        const powerUpObj = powerUp && typeof powerUp === "object" ? powerUp : {};
+        const messageObj = source.message && typeof source.message === "object" ? source.message : {};
+
+        texts.push(
+          source.message_type,
+          source.messageType,
+          source.reward_type,
+          source.rewardType,
+          source.powerUpType,
+          source.powerupType,
+          source.power_up_type,
+          source.powerUpName,
+          source.powerupName,
+          source.powerUpTitle,
+          source.rewardTitle,
+          source.actionName,
+          source.type,
+          source.kind,
+          source.eventType,
+          powerUpObj.type,
+          powerUpObj.name,
+          powerUpObj.title,
+          messageObj.message_type,
+          messageObj.messageType
+        );
+      });
+
+      const joined = texts.filter((value) => value !== undefined && value !== null).join(" ").toLowerCase();
+      return {
+        isGigantify: joined.includes("gigantify_an_emote") || joined.includes("power_ups_gigantified_emote") || joined.includes("gigantify") || joined.includes("gigantificar"),
+        text: joined
+      };
+    }
+
+    function normalizePowerUpEmoteFromPayload(...sources) {
+      for (const source of sources) {
+        if (!source || typeof source !== "object") continue;
+        const powerUp = firstValue(source.power_up, source.powerUp, source.powerup, {});
+        const powerUpObj = powerUp && typeof powerUp === "object" ? powerUp : {};
+        const emote = firstValue(
+          source.gigantified_emote,
+          source.gigantifiedEmote,
+          powerUpObj.emote,
+          Array.isArray(source.message_emotes) ? source.message_emotes[0] : null,
+          Array.isArray(source.messageEmotes) ? source.messageEmotes[0] : null,
+          Array.isArray(source.emotes) ? source.emotes[0] : null,
+          null
+        );
+
+        if (!emote || typeof emote !== "object") continue;
+        const id = String(firstValue(emote.id, emote.emoteId, emote.emote_id, "")).trim();
+        const name = String(firstValue(emote.name, emote.text, emote.code, id, "Gigantify")).trim();
+        const imageUrl = String(firstValue(
+          emote.imageUrl,
+          emote.image_url,
+          emote.url,
+          emote.src,
+          id ? `https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(id)}/default/dark/3.0` : ""
+        )).trim();
+
+        if (name && imageUrl && isSafeUrl(imageUrl)) {
+          return { id, name, imageUrl, type: "Twitch", source: "Twitch", fromExplicitGigantify: true };
+        }
+      }
+
+      return null;
+    }
+
     function renderGigantifyContent(messageRaw, emotes = []) {
       const normalizedEmotes = normalizeEmotes(emotes);
       const text = String(messageRaw || "");
@@ -1037,31 +1170,34 @@
       const event = raw.event || {};
       const data = raw.data || raw;
       const eventType = String(firstValue(event.type, raw.type, "")).toLowerCase();
-      const rewardType = String(firstValue(data.reward_type, data.rewardType, raw.reward_type, raw.rewardType, "")).toLowerCase();
+      const signal = getPowerUpSignal(raw, data, event);
 
-      if (!eventType.includes("automaticrewardredemption") && !eventType.includes("custompowerupredemption")) return null;
-      if (rewardType !== "gigantify_an_emote") return null;
+      if (
+        !signal.isGigantify ||
+        !(
+          eventType.includes("automaticrewardredemption") ||
+          eventType.includes("custompowerupredemption") ||
+          eventType.includes("powerup") ||
+          eventType.includes("bits") ||
+          eventType.includes("custom") ||
+          signal.text.includes("power_ups_gigantified_emote")
+        )
+      ) return null;
 
-      const emote = data.gigantified_emote || data.gigantifiedEmote || data.message_emotes?.[0] || data.messageEmotes?.[0];
-      if (!emote || typeof emote !== "object") return null;
-
-      const imageUrl = String(firstValue(emote.imageUrl, emote.image_url, emote.url, emote.src, "")).trim();
-      if (!imageUrl || !isSafeUrl(imageUrl)) return null;
+      const emote = normalizePowerUpEmoteFromPayload(data, raw);
+      if (!emote) return null;
 
       return {
         platform: "twitch",
-        username: firstValue(data.user_name, data.userName, data.user_login, data.userLogin, ""),
-        message: firstValue(data.message_text, data.messageText, data.user_input, data.userInput, emote.name, "Gigantify"),
-        emotes: [{
-          name: firstValue(emote.name, emote.text, emote.code, "Gigantify"),
-          imageUrl,
-          type: "Twitch",
-          source: "Twitch",
-          fromExplicitGigantify: true
-        }],
+        username: firstValue(data.user_name, data.userName, data.user_login, data.userLogin, data.user && data.user.name, data.user && data.user.login, raw.username, raw.userName, ""),
+        userId: firstValue(data.user_id, data.userId, data.user && data.user.id, raw.userId, raw.user_id, ""),
+        message: firstValue(data.message_text, data.messageText, data.user_input, data.userInput, data.text, raw.message, raw.text, emote.name, "Gigantify"),
+        emotes: [emote],
         time: normalizeTime(firstValue(raw.timeStamp, raw.timestamp, data.redeemed_at, data.redeemedAt)),
         kind: "gigantifyEffect",
-        category: "chatMessages"
+        category: "chatMessages",
+        powerUpType: "gigantify",
+        gigantify: true
       };
     }
 
@@ -1069,8 +1205,10 @@
       const type = String(firstValue(item.powerUpType, item.powerupType, item.power_up, item.powerUp, item.type, item.kind, item.eventType, item.actionType)).toLowerCase();
       const rawHint = String(firstValue(item.powerUpName, item.powerupName, item.powerUpTitle, item.rewardTitle, item.title, item.actionName)).toLowerCase();
       const messageHint = String(firstValue(item.message, item.text, item.rawInput)).toLowerCase();
+      const signal = getPowerUpSignal(item, item._data, item._message, item._meta);
       return (
         Boolean(item.gigantify || item.isGigantify || item.gigantified) ||
+        signal.isGigantify ||
         type.includes("gigantify") ||
         rawHint.includes("gigantify") ||
         messageHint.includes("gigantify") ||
@@ -1097,14 +1235,20 @@
         mapped.powerupType,
         mapped.power_up,
         mapped.powerUp,
+        mapped.message_type,
+        mapped.messageType,
         mapped.eventType,
         mapped.actionType,
         messageObj.powerUpType,
         messageObj.powerupType,
         messageObj.power_up,
         messageObj.powerUp,
+        messageObj.message_type,
+        messageObj.messageType,
         metaObj.powerUpType,
-        metaObj.powerupType
+        metaObj.powerupType,
+        metaObj.message_type,
+        metaObj.messageType
       )).toLowerCase();
 
       const explicitName = String(firstValue(
@@ -1122,7 +1266,9 @@
 
       return (
         Boolean(mapped.gigantify || mapped.isGigantify || mapped.gigantified || messageObj.gigantify || messageObj.isGigantify || messageObj.gigantified || metaObj.gigantify) ||
+        getPowerUpSignal(mapped, messageObj, metaObj).isGigantify ||
         explicitType.includes("gigantify") ||
+        explicitType.includes("power_ups_gigantified_emote") ||
         explicitType.includes("gigantificar") ||
         explicitType.includes("power-up:gigantify") ||
         explicitType.includes("powerup:gigantify") ||
@@ -4167,6 +4313,30 @@
           type: eventObj.type || payload.type,
           eventType: eventObj.type || payload.eventType
         }),
+        messageType: firstValue(
+          messageObj.message_type,
+          messageObj.messageType,
+          dataObj.message_type,
+          dataObj.messageType,
+          payload.message_type,
+          payload.messageType
+        ),
+        powerUpType: firstValue(
+          payload.powerUpType,
+          payload.powerupType,
+          payload.power_up_type,
+          payload.rewardType,
+          payload.reward_type,
+          dataObj.powerUpType,
+          dataObj.powerupType,
+          dataObj.power_up_type,
+          dataObj.rewardType,
+          dataObj.reward_type,
+          dataObj.power_up && dataObj.power_up.type,
+          dataObj.powerUp && dataObj.powerUp.type,
+          payload.power_up && payload.power_up.type,
+          payload.powerUp && payload.powerUp.type
+        ),
         firstMessage: Boolean(
           messageObj.firstMessage ||
           metaObj.firstMessage ||
@@ -5124,7 +5294,7 @@
       }
 
       if (lowerEvent.includes("powerup") || lowerEvent.includes("power-up") || lowerEvent.includes("gigantify")) {
-        mapped.powerUpType = firstValue(payload.powerUpType, payload.powerupType, payload.power_up, payload.powerUp, dataObj.powerUpType, dataObj.powerupType, dataObj.power_up, dataObj.powerUp, eventName);
+        mapped.powerUpType = firstValue(mapped.powerUpType, payload.powerUpType, payload.powerupType, payload.power_up, payload.powerUp, dataObj.powerUpType, dataObj.powerupType, dataObj.power_up, dataObj.powerUp, eventName);
         mapped.powerUpName = firstValue(payload.powerUpName, payload.powerupName, payload.powerUpTitle, dataObj.powerUpName, dataObj.powerupName, dataObj.powerUpTitle, payload.title, dataObj.title);
         mapped.gigantify = lowerEvent.includes("gigantify") || Boolean(payload.gigantify || payload.isGigantify || payload.gigantified || dataObj.gigantify || dataObj.isGigantify || dataObj.gigantified);
         mapped.category = "powerUpRedemptions";
@@ -5147,6 +5317,7 @@
       if (looksLikeGigantifyChat(mapped, messageObj, metaObj)) {
         mapped.gigantify = true;
         mapped.powerUpType = "gigantify";
+        mapped.category = mapped.category || "chatMessages";
       }
 
       return mapped;
@@ -5486,6 +5657,7 @@
           });
           console.groupEnd();
         }
+        registerPowerUpEcho(explicitGigantify);
         addGigantifyEffect(explicitGigantify);
         return;
       }
@@ -5493,6 +5665,11 @@
       const mapped = mapStreamerBotPayload(parsed);
 
       if (!mapped || mapped.__ignore) {
+        return;
+      }
+
+      if (isPowerUpEchoMessage(mapped)) {
+        wsLog("powerup echo ignored", mapped);
         return;
       }
 
@@ -5532,6 +5709,10 @@
 
       if (!mapped.kind) {
         return;
+      }
+
+      if (isGigantifyPowerUp(mapped)) {
+        registerPowerUpEcho(mapped);
       }
 
       push(mapped);
