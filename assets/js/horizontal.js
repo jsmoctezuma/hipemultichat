@@ -321,6 +321,7 @@
       const raw = [];
       if (Array.isArray(payload.emotes)) raw.push(...payload.emotes);
       if (Array.isArray(payload.message_emotes)) raw.push(...payload.message_emotes);
+      if (payload.emote && typeof payload.emote === "object") raw.push(payload.emote);
       const powerUp = first(payload.power_up, payload.powerUp, payload.powerup, {});
       if (powerUp && typeof powerUp === "object" && powerUp.emote) raw.push(powerUp.emote);
       const messageObj = payload.message && typeof payload.message === "object" ? payload.message : {};
@@ -2241,7 +2242,7 @@
             Twitch: [
               "ChatMessage", "Cheer", "Follow", "Sub", "ReSub", "GiftSub", "GiftBomb", "Raid",
               "Announcement", "RewardRedemption", "AutomaticRewardRedemption", "CustomPowerUpRedemption",
-              "PowerUp", "WatchStreak", "WatchStreaks", "ChatMessageDeleted", "ChatCleared",
+              "PowerUpRedemption", "PowerUp", "WatchStreak", "WatchStreaks", "ChatMessageDeleted", "ChatCleared",
               "SharedChatMessageDeleted", "UserBanned", "UserTimedOut", "SharedChatUserBanned",
               "SharedChatUserTimedout", "ChatEmoteModeOn", "ChatEmoteModeOff", "ChatFollowerModeOn",
               "ChatFollowerModeOff", "ChatFollowerModeChanged", "ChatSlowModeOn", "ChatSlowModeOff",

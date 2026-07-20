@@ -1037,6 +1037,7 @@
         const emote = firstValue(
           source.gigantified_emote,
           source.gigantifiedEmote,
+          source.emote,
           powerUpObj.emote,
           Array.isArray(source.message_emotes) ? source.message_emotes[0] : null,
           Array.isArray(source.messageEmotes) ? source.messageEmotes[0] : null,
@@ -3783,6 +3784,7 @@
             "RewardRedemption",
             "AutomaticRewardRedemption",
             "CustomPowerUpRedemption",
+            "PowerUpRedemption",
             "PowerUp",
             "WatchStreak",
             "WatchStreaks",
