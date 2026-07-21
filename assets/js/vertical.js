@@ -5660,7 +5660,12 @@
           console.groupEnd();
         }
         registerPowerUpEcho(explicitGigantify);
-        addGigantifyEffect(explicitGigantify);
+        addMessage({
+          ...explicitGigantify,
+          kind: "message",
+          powerUpType: "gigantify",
+          gigantify: true
+        });
         return;
       }
 
