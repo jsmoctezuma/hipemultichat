@@ -2729,6 +2729,29 @@
       if (!CONFIG.showAvatar) return item;
       if (isSystemAvatarEvent(item)) return item;
 
+      if (isGigantifyPowerUp(item)) {
+        const direct = String(firstValue(
+          item.avatar,
+          item.avatarUrl,
+          item.profileImage,
+          item.profileImageUrl,
+          item.userProfileImageUrl,
+          item.userProfileImage
+        ) || "").trim();
+
+        const identity = avatarLookupIdentity(item);
+        if (!direct && identity.platform === "twitch" && identity.username) {
+          const external = await Promise.race([
+            fetchExternalAvatar({
+              ...identity,
+              key: avatarLookupKey(identity.platform, identity.username, "")
+            }),
+            new Promise((resolve) => setTimeout(() => resolve(""), 1200))
+          ]);
+          if (external) item.avatar = external;
+        }
+      }
+
       const current = resolveAvatar(item);
       if (current) item.avatar = current;
 
