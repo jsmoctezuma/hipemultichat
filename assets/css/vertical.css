@@ -38,8 +38,8 @@
       --badge-size: 26px;
       --row-gap: 17px;
       --emote-size: 28px;
-      /* v34: tamaño real de emote normal ligado a fontSize, sin tocar PowerUp/Gigantify. */
-      --emote-inline-size: calc(var(--font-size) * 1.12);
+      /* El emote normal respeta emoteSize del panel; PowerUp/Gigantify usa su propia variable. */
+      --emote-inline-size: var(--emote-size);
       --emote-large-size: 220px;
 
       /* --- Ajuste v100: color configurable para chatBubbles --- */
