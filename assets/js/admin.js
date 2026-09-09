@@ -15,7 +15,7 @@
     }
 
     const fields = [
-      "font","fontSize","emoteSize","emoteLargeSize","messageSpacing","accentColor","bg","opacity","hideAfter","sbHost","sbPort",
+      "font","fontSize","messageSpacing","accentColor","bg","opacity","hideAfter","sbHost","sbPort",
       "showAvatar","showBadges","showTimestamp","showPlatform","inlineChat","groupConsecutiveMessages",
       "highlightMentions","chatBubbles","showCommands",
       "ignoreChatters",
@@ -54,8 +54,6 @@
         ["opacity", overlayOpacity],
         ["font", $("font").value],
         ["fontSize", $("fontSize").value],
-        ["emoteSize", positiveNumber("emoteSize", 28)],
-        ["emoteLargeSize", positiveNumber("emoteLargeSize", 220)],
         ["messageSpacing", $("messageSpacing").value],
         ["hideAfter", positiveNumber("hideAfter", 0)],
         ["sbHost", streamerBotHost()],
@@ -197,8 +195,8 @@
 
     function update(){
       if (Number($("hideAfter").value) < 0 || !String($("hideAfter").value).trim()) $("hideAfter").value = "0";
-      if (!Number.isFinite(Number($("emoteSize").value)) || Number($("emoteSize").value) < 12) $("emoteSize").value = "28";
-      if (!Number.isFinite(Number($("emoteLargeSize").value)) || Number($("emoteLargeSize").value) < 48) $("emoteLargeSize").value = "220";
+      if (!Number.isFinite(Number($("fontSize").value)) || Number($("fontSize").value) < 14) $("fontSize").value = "14";
+      if (Number($("fontSize").value) > 36) $("fontSize").value = "36";
       if (!String($("sbHost").value).trim()) $("sbHost").value = "127.0.0.1";
       if (!Number.isFinite(Number($("sbPort").value)) || Number($("sbPort").value) <= 0) $("sbPort").value = "8080";
       document.documentElement.style.setProperty("--accent", $("accentColor").value);

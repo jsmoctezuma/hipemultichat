@@ -42,6 +42,7 @@
       enlargeEmotes: false,
       gigantifyEmotes: true,
       emoteSize: 28,
+      emoteSizeManual: false,
       emoteLargeSize: 220,
       emoteOnlyMaxTextLength: 120,
 
@@ -3492,6 +3493,12 @@
         document.documentElement.style.setProperty("--name-size", Math.round(fontSize * 1.08) + "px");
         document.documentElement.style.setProperty("--time-size", Math.max(14, Math.round(fontSize * .78)) + "px");
 
+        /* Emote normal automático: 14/28 al estilo Twitch y 18/28 en la base del overlay. */
+        if (!CONFIG.emoteSizeManual) {
+          CONFIG.emoteSize = Math.max(28, Math.min(56, Math.round(fontSize * 1.55)));
+          document.documentElement.style.setProperty("--emote-size", CONFIG.emoteSize + "px");
+        }
+
         /* --- Ajuste v117/v118: avatar, badges, iconos y tarjetas escalan con fontSize --- */
         /* --- Ajuste v118: avatars más compactos; las tarjetas/eventos ya no conservan avatar fijo gigante --- */
         /* --- Ajuste v121: el chat normal sigue compacto; eventos recuperan jerarquía visual --- */
@@ -3667,6 +3674,7 @@
       if (Object.prototype.hasOwnProperty.call(options, "gigantifyEmotes")) CONFIG.gigantifyEmotes = Boolean(options.gigantifyEmotes);
 
       if (options.emoteSize) {
+        CONFIG.emoteSizeManual = true;
         CONFIG.emoteSize = Number(options.emoteSize);
         document.documentElement.style.setProperty("--emote-size", Number(options.emoteSize) + "px");
       }
@@ -6043,6 +6051,7 @@
       if (params.has("emoteSize")) {
         const size = Number(params.get("emoteSize"));
         if (Number.isFinite(size) && size > 8) {
+          CONFIG.emoteSizeManual = true;
           CONFIG.emoteSize = size;
           document.documentElement.style.setProperty("--emote-size", size + "px");
         }

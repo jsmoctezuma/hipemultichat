@@ -100,7 +100,9 @@
       const base = Number.isFinite(Number(logicalFontSize)) ? Number(logicalFontSize) : 18;
       const avatar = Math.max(16, Math.min(32, Math.round(base + 2)));
       const badge = Math.max(12, Math.min(24, Math.round(base * .78)));
-      const emote = CONFIG && CONFIG.emoteSize ? Math.max(12, Math.min(96, Math.round(CONFIG.emoteSize))) : Math.max(16, Math.min(32, Math.round(base + 2)));
+      // El ticker conserva una caja de 28px para no desbordar la barra fija de 40px.
+      // Las URLs antiguas con emoteSize explícito siguen respetando su valor.
+      const emote = CONFIG && CONFIG.emoteSize ? Math.max(12, Math.min(96, Math.round(CONFIG.emoteSize))) : 28;
       const icon = Math.max(14, Math.min(24, Math.round(base)));
       const gap = Math.max(26, Math.round(base + 18));
 
