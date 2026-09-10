@@ -1566,10 +1566,13 @@
       });
     }
 
+    const MAX_GROUPED_MESSAGES_HORIZONTAL = 3;
+
     function canGroupWithLastMessage(item) {
       if (!CONFIG.groupConsecutiveMessages || item.kind !== "message") return null;
       const last = track.lastElementChild;
       if (!last || last.dataset.kind !== "message") return null;
+      if (last.querySelectorAll(".message-part").length >= MAX_GROUPED_MESSAGES_HORIZONTAL) return null;
       const lastUser = String(last.dataset.user || "").toLowerCase();
       const currentUser = String(item.username || "").toLowerCase();
       const lastPlatform = String(last.dataset.platform || "").toLowerCase();
@@ -1977,6 +1980,27 @@
       playNextSpecialEvent();
     }
 
+    const messageHideTimers = new WeakMap();
+
+    function scheduleMessageHide(node) {
+      if (!node) return;
+
+      const previousTimer = messageHideTimers.get(node);
+      if (previousTimer) {
+        clearTimeout(previousTimer);
+        messageHideTimers.delete(node);
+      }
+
+      if (CONFIG.hideAfter <= 0) return;
+
+      const timer = setTimeout(() => {
+        messageHideTimers.delete(node);
+        if (node.isConnected) node.remove();
+      }, CONFIG.hideAfter);
+
+      messageHideTimers.set(node, timer);
+    }
+
     async function addItem(item) {
       if (!shouldShow(item)) return;
 
@@ -1987,6 +2011,7 @@
 
       const lastGroup = item.kind === "message" ? canGroupWithLastMessage(item) : null;
       if (lastGroup && appendGroupedMessage(lastGroup, item)) {
+        scheduleMessageHide(lastGroup);
         return;
       }
 
@@ -2003,12 +2028,7 @@
       }
 
       // Mensajes normales NO se borran solos. Solo si hideAfter se configura explícitamente.
-      if (CONFIG.hideAfter > 0) {
-        setTimeout(() => {
-          if (!node.isConnected) return;
-          node.remove();
-        }, CONFIG.hideAfter);
-      }
+      scheduleMessageHide(node);
     }
 
     function isClearChatPayload(payload = {}) {

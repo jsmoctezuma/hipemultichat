@@ -2759,6 +2759,31 @@
       return item;
     }
 
+    const MAX_GROUPED_MESSAGES_VERTICAL = 6;
+
+    function isGroupableMessageItem(item = {}) {
+      return (
+        !isGigantifyPowerUp(item) &&
+        !item.linkPreview &&
+        !(Array.isArray(item.images) && item.images.length) &&
+        !item.firstMessage &&
+        !resolveReplyInfo(item).isReply &&
+        !shouldHighlightMention(item.message)
+      );
+    }
+
+    function isGroupableMessageRow(row) {
+      if (!row || !row.classList || !row.classList.contains("chat-row")) return false;
+      if (
+        row.classList.contains("powerup-gigantify") ||
+        row.classList.contains("reply-row") ||
+        row.classList.contains("first-message") ||
+        row.classList.contains("highlight-mention")
+      ) return false;
+
+      return !row.querySelector(".reply-outer, .message-media, .link-preview, .gigantify-content");
+    }
+
     async function addMessage(item = {}) {
       if (!shouldShowPayload(item)) return;
 
@@ -2771,21 +2796,25 @@
       const last = chatStack.lastElementChild;
       const itemUser = String(item.username || "").trim().toLowerCase();
       const messageIdHtmlAttr = messageIdAttr(item);
+      const lastMessageBlock = last?.querySelector?.(".message-block");
+      const groupedMessageCount = lastMessageBlock
+        ? 1 + lastMessageBlock.querySelectorAll(".grouped-message-line").length
+        : 0;
 
       if (
         CONFIG.groupConsecutiveMessages &&
         itemUser &&
         last &&
+        lastMessageBlock &&
+        isGroupableMessageRow(last) &&
+        isGroupableMessageItem(item) &&
+        groupedMessageCount < MAX_GROUPED_MESSAGES_VERTICAL &&
         last.dataset &&
         last.dataset.user === itemUser &&
-        last.dataset.platform === normalizePlatform(item.platform) &&
-        !isGigantifyPowerUp(item) &&
-        !item.linkPreview &&
-        !item.firstMessage &&
-        !resolveReplyInfo(item).isReply
+        last.dataset.platform === normalizePlatform(item.platform)
       ) {
         /* --- Ajuste v99: no pegar mensajes consecutivos en la misma línea; agruparlos con flecha --- */
-        last.querySelector(".message-block")?.insertAdjacentHTML(
+        lastMessageBlock.insertAdjacentHTML(
           "beforeend",
           `<div class="grouped-message-line"><span class="grouped-message-arrow">↳</span><span class="message-content grouped-message-content"${messageIdHtmlAttr}>${renderMessageContent(String(item.message || ""), item.emotes || []).html}</span></div>`
         );
@@ -3446,16 +3475,30 @@
       return buildLinkPreviewFromText(message);
     }
 
-    function scheduleHide(node, seconds) {
-      const duration = Number(seconds);
-      if (!Number.isFinite(duration) || duration <= 0 || !node) return;
+    const messageHideTimers = new WeakMap();
 
-      setTimeout(() => {
+    function scheduleHide(node, seconds) {
+      if (!node) return;
+
+      const previousTimer = messageHideTimers.get(node);
+      if (previousTimer) {
+        clearTimeout(previousTimer);
+        messageHideTimers.delete(node);
+      }
+
+      const duration = Number(seconds);
+      if (!Number.isFinite(duration) || duration <= 0) return;
+
+      const timer = setTimeout(() => {
+        messageHideTimers.delete(node);
+        if (!node.isConnected) return;
         node.style.transition = "opacity .35s ease, transform .35s ease";
         node.style.opacity = "0";
         node.style.transform = "translateY(-8px)";
         setTimeout(() => node.remove(), 420);
       }, duration * 1000);
+
+      messageHideTimers.set(node, timer);
     }
 
     /* --- Ajuste v128: cargar fuente de Google cuando se pide por URL; OBS no siempre la tiene instalada --- */
