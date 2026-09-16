@@ -16,7 +16,7 @@
 
     const fields = [
       "font","fontSize","messageSpacing","accentColor","bg","opacity","hideAfter","sbHost","sbPort",
-      "showAvatar","showBadges","showTimestamp","showPlatform","inlineChat","groupConsecutiveMessages",
+      "showAvatar","showBadges","showTimestamp","showPlatform","showTwitchGifs","inlineChat","groupConsecutiveMessages",
       "highlightMentions","chatBubbles","showCommands",
       "ignoreChatters",
       "twChat","twFollows","twSubs","twCheers","twRaids","twRewards","twStreaks","twAnnouncements","twChatState",
@@ -64,6 +64,7 @@
         ["showBadges", bool("showBadges")],
         ["showTimestamp", bool("showTimestamp")],
         ["showPlatform", bool("showPlatform")],
+        ["showTwitchGifs", bool("showTwitchGifs")],
         ["inlineChat", bool("inlineChat")],
         ["groupConsecutiveMessages", bool("groupConsecutiveMessages")],
         ["highlightMentions", bool("highlightMentions")],
@@ -195,6 +196,7 @@
 
     function update(){
       if (Number($("hideAfter").value) < 0 || !String($("hideAfter").value).trim()) $("hideAfter").value = "0";
+      if (Number($("hideAfter").value) > 600) $("hideAfter").value = "600";
       if (!Number.isFinite(Number($("fontSize").value)) || Number($("fontSize").value) < 14) $("fontSize").value = "14";
       if (Number($("fontSize").value) > 36) $("fontSize").value = "36";
       if (!String($("sbHost").value).trim()) $("sbHost").value = "127.0.0.1";

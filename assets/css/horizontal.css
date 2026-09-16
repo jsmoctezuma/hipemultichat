@@ -256,6 +256,26 @@
       margin-left: calc(var(--font-size) * .16);
     }
 
+    .twitch-gif-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 1.35em;
+      margin: 0 .18em 0 .08em;
+      padding: .08em .42em;
+      border: 1px solid rgba(145,70,255,.52);
+      border-radius: 999px;
+      color: #f3e8ff;
+      background: linear-gradient(135deg, rgba(145,70,255,.54), rgba(255,79,160,.34));
+      box-shadow: 0 2px 7px rgba(0,0,0,.26);
+      font-size: .68em;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: .05em;
+      vertical-align: .08em;
+      white-space: nowrap;
+    }
+
     #eventOverlay {
       position: fixed;
       left: 0;

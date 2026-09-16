@@ -28,6 +28,7 @@
       showPlatform: params.get("platform") !== "0" && params.get("showPlatform") !== "0",
       showBadges: params.get("badges") !== "0" && params.get("showBadges") !== "0",
       showUsername: params.get("username") !== "0" && params.get("showUsername") !== "0",
+      showTwitchGifs: params.get("showTwitchGifs") !== "0",
       font: params.get("font") || "",
       fontSize: clampNumber(urlFontSize, 10, 44, 18),
       groupConsecutiveMessages: params.get("groupConsecutiveMessages") === "1",
@@ -197,6 +198,42 @@
       return /^https?:\/\//i.test(u) ? u : "";
     }
 
+    function normalizeTwitchGifs(value = []) {
+      if (!Array.isArray(value)) return [];
+
+      const seen = new Set();
+      const result = [];
+
+      for (const part of value) {
+        if (!part || typeof part !== "object") continue;
+
+        const type = String(part.type || "").trim().toLowerCase();
+        const gifId = String(first(part.gifId, part.gif_id, type === "gif" ? part.id : "")).trim();
+        if (type !== "gif" && !gifId) continue;
+
+        const url = String(first(part.url, part.gifUrl, part.gif_url, "")).trim();
+        if (!/^https:\/\//i.test(url)) continue;
+
+        const text = String(first(part.text, part.alt, part.description, "GIF de Twitch")).trim();
+        const key = `${gifId}|${url}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push({ id: gifId, type: "gif", text, url });
+      }
+
+      return result;
+    }
+
+    function safeCssColor(value) {
+      const color = String(value || "").trim();
+      if (!color) return "";
+      const isSafe =
+        /^#[0-9a-fA-F]{3,8}$/.test(color) ||
+        /^rgb(a)?\([0-9.,%\s]+\)$/.test(color) ||
+        /^hsl(a)?\([0-9.,%\s]+\)$/.test(color);
+      return isSafe ? color : "";
+    }
+
     function compact(value = "", max = 160) {
       const text = String(value || "").replace(/\s+/g, " ").trim();
       return text.length > max ? `${text.slice(0, Math.max(0, max - 1)).trim()}…` : text;
@@ -349,10 +386,12 @@
       const out = [];
       for (const e of raw) {
         const name = first(e.name, e.text, e.emoji, "");
-        const imageUrl = first(e.imageUrl, e.image_url, e.url, e.image, "");
+        const imageUrl = safeUrl(first(e.imageUrl, e.image_url, e.url, e.image, ""));
         const id = first(e.id, e.emoteId, e.emote_id, "");
         const start = first(e.startIndex, e.begin, e.start, "");
         const end = first(e.endIndex, e.end, "");
+        const hasStart = start !== "" && Number.isFinite(Number(start));
+        const hasEnd = end !== "" && Number.isFinite(Number(end));
         const provider = String(first(e.provider, e.source, e.type, "")).toLowerCase();
         const key = `${id}|${name}|${start}|${end}|${provider}|${imageUrl}`;
         if (!name || !imageUrl || seen.has(key)) continue;
@@ -362,8 +401,8 @@
           name,
           imageUrl,
           provider,
-          startIndex: Number(start),
-          endIndex: Number(end)
+          startIndex: hasStart ? Number(start) : NaN,
+          endIndex: hasEnd ? Number(end) : NaN
         });
       }
       return out;
@@ -493,6 +532,17 @@
       }
 
       return html;
+    }
+
+    function renderCompactTwitchGifMessage(message, emotes = [], gifs = []) {
+      const messageHtml = renderMessageText(compact(message, 180), emotes);
+      const normalized = normalizeTwitchGifs(gifs);
+      if (!CONFIG.showTwitchGifs || !normalized.length) return messageHtml;
+
+      const label = normalized.length > 1 ? `GIF ×${normalized.length}` : "GIF";
+      const description = compact(String(message || "").trim() || normalized.map((gif) => gif.text).filter(Boolean).join(" "), 180);
+      const descriptionHtml = messageHtml || escapeHtml(description);
+      return `<span class="twitch-gif-chip" title="GIF de Twitch">${escapeHtml(label)}</span>${descriptionHtml ? ` ${descriptionHtml}` : ""}`;
     }
 
 
@@ -669,6 +719,7 @@
         nameColor: first(userObj.color, data.color, data.nameColor, ""),
         badges: normalizeBadges(first(userObj.badges, data.badges, root.badges, [])),
         emotes: normalizeEmotes(data),
+        twitchGifs: normalizeTwitchGifs(first(data.parts, messageObj.parts, root.parts, [])),
         message: first(data.text, data.message_text, data.userInput, data.user_input, data.systemMessage, data.message, root.text, root.message, ""),
         isReply: isExplicitTrue(data.isReply) || isExplicitTrue(root.isReply),
         reply: first(data.reply, root.reply, null),
@@ -1585,7 +1636,7 @@
       const msg = last.querySelector(".msg");
       if (!msg) return false;
 
-      const html = renderMessageText(compact(item.message, 180), item.emotes || []);
+      const html = renderCompactTwitchGifMessage(item.message, item.emotes || [], item.twitchGifs || []);
       const id = resolvePayloadMessageId(item);
 
       const sep = document.createElement("span");
@@ -1604,8 +1655,7 @@
     }
 
     function readableNameColor(value, fallback = "#c084fc") {
-      const raw = String(value || "").trim();
-      const color = raw || fallback;
+      const color = safeCssColor(value) || safeCssColor(fallback) || "#c084fc";
 
       let r = null, g = null, b = null;
 
@@ -1799,7 +1849,7 @@
     }
 
     function tokenMessage(item) {
-      const emoteHtml = renderMessageText(compact(item.message, 180), item.emotes || []);
+      const emoteHtml = renderCompactTwitchGifMessage(item.message, item.emotes || [], item.twitchGifs || []);
       const msgIdAttr = messageIdAttr(item);
       const uidAttr = userIdAttr(item);
       const replyInfo = resolveReplyInfo(item);
@@ -1975,7 +2025,17 @@
       }, 5200);
     }
 
+    function isReplaceableHypeTrainUpdate(item = {}) {
+      const type = String(item.type || "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      return item.category === "hypeTrain" && type === "hypetrainupdate";
+    }
+
     function enqueueSpecialEvent(item) {
+      if (isReplaceableHypeTrainUpdate(item)) {
+        const pendingIndex = specialEventQueue.findIndex(isReplaceableHypeTrainUpdate);
+        if (pendingIndex >= 0) specialEventQueue.splice(pendingIndex, 1);
+      }
+
       specialEventQueue.push(item);
       playNextSpecialEvent();
     }

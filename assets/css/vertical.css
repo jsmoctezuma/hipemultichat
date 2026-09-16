@@ -475,6 +475,51 @@
       filter: drop-shadow(0 2px 1px rgba(0,0,0,.35));
     }
 
+    .twitch-gif-list {
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 6px;
+    }
+
+    .twitch-gif-fragment {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      max-width: min(100%, 280px);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      background: rgba(0,0,0,.28);
+      box-shadow: 0 5px 18px rgba(0,0,0,.22);
+    }
+
+    .twitch-gif-image {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: min(220px, 36vh);
+      object-fit: contain;
+    }
+
+    .twitch-gif-fallback {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      padding: 5px 9px;
+      border: 1px solid rgba(145,70,255,.34);
+      border-radius: 999px;
+      color: rgba(255,255,255,.78);
+      background: rgba(145,70,255,.14);
+      font-size: calc(var(--font-size) * .72);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
     .kick-emote-fallback {
       display: inline-flex;
       align-items: center;

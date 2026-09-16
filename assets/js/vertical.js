@@ -16,8 +16,22 @@
       }
     }
 
+    function replaceBrokenTwitchGif(img) {
+      if (!img || !(img instanceof HTMLImageElement)) return;
+      if (!img.classList || !img.classList.contains("twitch-gif-image")) return;
+
+      const fallback = document.createElement("span");
+      fallback.className = "twitch-gif-fallback";
+      fallback.textContent = img.alt ? `GIF · ${img.alt}` : "GIF no disponible";
+
+      const fragment = img.closest(".twitch-gif-fragment");
+      if (fragment) fragment.replaceWith(fallback);
+      else img.replaceWith(fallback);
+    }
+
     document.addEventListener("error", (event) => {
       replaceBrokenTwemojiImage(event.target);
+      replaceBrokenTwitchGif(event.target);
     }, true);
 
 
@@ -39,6 +53,7 @@
       showPronouns: false,
       showUsername: true,
       customEmotes: true,
+      showTwitchGifs: true,
       enlargeEmotes: false,
       gigantifyEmotes: true,
       emoteSize: 28,
@@ -633,6 +648,62 @@
     function isSafeUrl(value) {
       const url = String(value || "").trim();
       return /^https?:\/\//i.test(url) || /^data:image\//i.test(url) || /^\.?\//.test(url);
+    }
+
+    function normalizeTwitchGifList(value = []) {
+      if (!Array.isArray(value)) return [];
+
+      const seen = new Set();
+      const result = [];
+
+      value.forEach((part) => {
+        if (!part || typeof part !== "object") return;
+
+        const type = String(part.type || "").trim().toLowerCase();
+        const gifId = String(firstValue(part.gifId, part.gif_id, type === "gif" ? part.id : "")).trim();
+        if (type !== "gif" && !gifId) return;
+
+        // Twitch exige utilizar sin modificaciones la URL completa entregada.
+        // Para contenido remoto del chat aceptamos únicamente HTTPS.
+        const url = String(firstValue(part.url, part.gifUrl, part.gif_url)).trim();
+        if (!/^https:\/\//i.test(url)) return;
+
+        const text = String(firstValue(part.text, part.alt, part.description, "GIF de Twitch")).trim();
+        const key = `${gifId}|${url}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+
+        result.push({ id: gifId, type: "gif", text, url });
+      });
+
+      return result;
+    }
+
+    function stripTwitchGifDescriptions(messageRaw = "", gifs = []) {
+      let message = String(messageRaw || "");
+
+      (Array.isArray(gifs) ? gifs : []).forEach((gif) => {
+        const description = String(gif?.text || "");
+        if (!description) return;
+        const index = message.indexOf(description);
+        if (index >= 0) {
+          message = message.slice(0, index) + message.slice(index + description.length);
+        }
+      });
+
+      return message.replace(/[ \t]{2,}/g, " ").trim();
+    }
+
+    function renderTwitchGifs(gifs = []) {
+      const normalized = normalizeTwitchGifList(gifs);
+      if (!CONFIG.showTwitchGifs || !normalized.length) return "";
+
+      const content = normalized.map((gif) => {
+        const label = gif.text || "GIF de Twitch";
+        return `<span class="twitch-gif-fragment" data-gif-id="${escapeHtml(gif.id)}"><img class="twitch-gif-image" src="${escapeHtml(gif.url)}" alt="${escapeHtml(label)}" title="${escapeHtml(label)}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>`;
+      }).join("");
+
+      return `<div class="twitch-gif-list" aria-label="GIF de Twitch">${content}</div>`;
     }
 
     function upgradeEmoteUrl(url = "") {
@@ -2111,14 +2182,28 @@
       const platform = normalizePlatform(item.platform);
       const messageRaw = String(item.message || "");
       const isGigantify = isGigantifyPowerUp(item);
+      const twitchGifs = normalizeTwitchGifList(item.twitchGifs || []);
+      const hasTwitchGif = CONFIG.showTwitchGifs && twitchGifs.length > 0;
+      const displayMessageRaw = hasTwitchGif
+        ? stripTwitchGifDescriptions(messageRaw, twitchGifs)
+        : messageRaw;
+      const emotesForDisplay = hasTwitchGif
+        ? (Array.isArray(item.emotes) ? item.emotes : []).map((emote) => ({
+            ...emote,
+            start: NaN,
+            end: NaN,
+            startIndex: NaN,
+            endIndex: NaN
+          }))
+        : (item.emotes || []);
 
-      const emoteRender = renderMessageContent(messageRaw, item.emotes || [], {
+      const emoteRender = renderMessageContent(displayMessageRaw, emotesForDisplay, {
         forceLarge: false,
         emoteOnly: false
       });
 
       const gigantifyRender = isGigantify ? renderGigantifyContent(messageRaw, item.emotes || []) : null;
-      const hasMedia = Array.isArray(item.images) && item.images.length > 0;
+      const hasMedia = (Array.isArray(item.images) && item.images.length > 0) || hasTwitchGif;
       const hasPreview = Boolean(item.linkPreview);
       const hasAnyEmote = Array.isArray(item.emotes) && item.emotes.length > 0;
       const normalizeEmoteLayoutToken = (value) => String(value || "")
@@ -2133,13 +2218,13 @@
             return [name, id].filter(Boolean);
           })
       );
-      const emoteOnlyByTokens = hasAnyEmote && Boolean(messageRaw.trim()) && messageRaw.trim().split(/\s+/).every((part) => {
+      const emoteOnlyByTokens = hasAnyEmote && Boolean(displayMessageRaw.trim()) && displayMessageRaw.trim().split(/\s+/).every((part) => {
         const token = normalizeEmoteLayoutToken(part);
         return token && emoteNamesForLayout.has(token);
       });
       const normalizedEmotesForLayout = normalizeEmotes(item.emotes || []);
       const emoteOnlyByExactJoin = hasAnyEmote && (() => {
-        const normalizedMessage = normalizeEmoteLayoutToken(messageRaw).replace(/:+/g, "").replace(/\s+/g, "");
+        const normalizedMessage = normalizeEmoteLayoutToken(displayMessageRaw).replace(/:+/g, "").replace(/\s+/g, "");
         const normalizedEmoteSequence = normalizedEmotesForLayout
           .map((emote) => normalizeEmoteLayoutToken(emote.name).replace(/:+/g, ""))
           .filter(Boolean)
@@ -2147,7 +2232,7 @@
         return Boolean(normalizedMessage && normalizedEmoteSequence && normalizedMessage === normalizedEmoteSequence);
       })();
       const emoteOnlyByRanges = hasAnyEmote && (() => {
-        let rest = String(messageRaw || "");
+        let rest = String(displayMessageRaw || "");
         normalizedEmotesForLayout
           .slice()
           .sort((a, b) => Number(b.start ?? -1) - Number(a.start ?? -1))
@@ -2160,7 +2245,7 @@
           });
         return Boolean(rest.trim() === "" && normalizedEmotesForLayout.length);
       })();
-      const emoteOnlyByUnicodeEmoji = hasAnyEmote && isUnicodeEmojiOnlyMessage(messageRaw);
+      const emoteOnlyByUnicodeEmoji = hasAnyEmote && isUnicodeEmojiOnlyMessage(displayMessageRaw);
       const emoteOnlyMessage = emoteOnlyByTokens || emoteOnlyByExactJoin || emoteOnlyByRanges || emoteOnlyByUnicodeEmoji;
       const emoteOnlyCount = emoteOnlyMessage ? normalizedEmotesForLayout.length : 0;
       const emoteOnlyNeedsOwnLine = emoteOnlyMessage && emoteOnlyCount > 5;
@@ -2171,8 +2256,8 @@
         !CONFIG.inlineChat ||
         hasMedia ||
         hasPreview ||
-        (!emoteOnlyMessage && messageRaw.length > CONFIG.longMessageThreshold) ||
-        (!CONFIG.inlineChat && !emoteOnlyMessage && hasAnyEmote && messageRaw.length > 24)
+        (!emoteOnlyMessage && displayMessageRaw.length > CONFIG.longMessageThreshold) ||
+        (!CONFIG.inlineChat && !emoteOnlyMessage && hasAnyEmote && displayMessageRaw.length > 24)
       );
       const nameColor = readableNameColor(item.nameColor || item.userColor || item.color);
       const nameStyle = nameColor ? ` style="color:${escapeHtml(nameColor)}"` : "";
@@ -2191,10 +2276,12 @@
       // v58: emote-only normal usa el mismo layout que "hola" (.message-flow).
       // Antes se mandaba a .message-head por !emoteOnlyMessage y cambiaba el espaciado entre hora/badges.
       const simpleTextFlow = !isGigantify && !replyInfo.isReply && !hasMedia && !hasPreview && CONFIG.inlineChat;
-      const messageClass = `message-content${emoteRender.emoteOnly ? " emote-only" : ""}${longMessage ? "" : " inline"}`;
+      const hasMessageText = Boolean(displayMessageRaw.trim());
+      const messageClass = `message-content${emoteRender.emoteOnly ? " emote-only" : ""}${hasTwitchGif ? " has-twitch-gif" : ""}${longMessage ? "" : " inline"}`;
       const mediaHtml = renderImages(item.images);
+      const twitchGifHtml = renderTwitchGifs(twitchGifs);
       const previewHtml = renderLinkPreview(item.linkPreview);
-      const mentionClass = shouldHighlightMention(messageRaw) ? " highlight-mention" : "";
+      const mentionClass = shouldHighlightMention(displayMessageRaw) ? " highlight-mention" : "";
       const bubbleClass = CONFIG.chatBubbles ? " chat-bubble" : "";
       const firstMessageClass = item.firstMessage ? " first-message" : "";
       const firstMessageHtml = item.firstMessage ? `<span class="first-message-pill">Primer mensaje</span>` : "";
@@ -2238,12 +2325,13 @@
                 ${badgesHtml}
                 ${pronounsHtml}
                 ${usernameHtml}
-                ${isGigantify ? "" : (longMessage ? "" : `<span class="${messageClass}"${messageIdHtmlAttr}>${emoteRender.html}</span>`)}
+                ${isGigantify ? "" : (longMessage || !hasMessageText ? "" : `<span class="${messageClass}"${messageIdHtmlAttr}>${emoteRender.html}</span>`)}
               </div>
               ${replySection}
               ${isGigantify && gigantifyRender.textHtml ? `<div class="message-content gigantify-text-line"${messageIdHtmlAttr}>${gigantifyRender.textHtml}</div>` : ""}
               ${isGigantify && gigantifyRender.largeEmotesHtml ? `<div class="gigantify-content${gigantifyRender.pixel ? " big-pixel" : ""}"${messageIdHtmlAttr}>${gigantifyRender.largeEmotesHtml}</div>` : ""}
-              ${!isGigantify && longMessage ? `<span class="${messageClass}"${messageIdHtmlAttr}>${emoteRender.html}</span>` : ""}
+              ${!isGigantify && longMessage && hasMessageText ? `<span class="${messageClass}"${messageIdHtmlAttr}>${emoteRender.html}</span>` : ""}
+              ${!isGigantify ? twitchGifHtml : ""}
               ${!isGigantify ? mediaHtml : ""}
               ${!isGigantify ? previewHtml : ""}
             `}
@@ -2766,6 +2854,7 @@
         !isGigantifyPowerUp(item) &&
         !item.linkPreview &&
         !(Array.isArray(item.images) && item.images.length) &&
+        !(Array.isArray(item.twitchGifs) && item.twitchGifs.length) &&
         !item.firstMessage &&
         !resolveReplyInfo(item).isReply &&
         !shouldHighlightMention(item.message)
@@ -2781,7 +2870,7 @@
         row.classList.contains("highlight-mention")
       ) return false;
 
-      return !row.querySelector(".reply-outer, .message-media, .link-preview, .gigantify-content");
+      return !row.querySelector(".reply-outer, .message-media, .link-preview, .gigantify-content, .twitch-gif-list");
     }
 
     async function addMessage(item = {}) {
@@ -3077,7 +3166,7 @@
       }
 
       Config visual por URL o por JS:
-      showPlatform, showAvatar, showTimestamp/showTimestamps, showBadges, showPronouns, showUsername
+      showPlatform, showAvatar, showTimestamp/showTimestamps, showBadges, showPronouns, showUsername, showTwitchGifs
       font, fontSize, lineSpacing, chatBubbles, background/bg, backgroundOpacity/opacity
       hideAfter, excludeCommands, ignoreChatters, scrollDirection, groupConsecutiveMessages
       inlineChat, highlightMentions, embedImages, showYouTubeLinkPreviews
@@ -3603,6 +3692,7 @@
         badges: Array.isArray(payload.badges) ? payload.badges : [],
         pronouns: firstValue(payload.pronouns, payload.pronoun),
         emotes: Array.isArray(payload.emotes) ? payload.emotes : [],
+        twitchGifs: normalizeTwitchGifList(firstValue(payload.twitchGifs, payload.gifs, payload.parts)),
         images: normalizeImages(payload),
         linkPreview: normalizeLinkPreview(payload),
         roles: Array.isArray(payload.roles) ? payload.roles : [],
@@ -3713,6 +3803,7 @@
       if (Object.prototype.hasOwnProperty.call(options, "showPronouns")) CONFIG.showPronouns = Boolean(options.showPronouns);
       if (Object.prototype.hasOwnProperty.call(options, "showUsername")) CONFIG.showUsername = Boolean(options.showUsername);
       if (Object.prototype.hasOwnProperty.call(options, "customEmotes")) CONFIG.customEmotes = Boolean(options.customEmotes);
+      if (Object.prototype.hasOwnProperty.call(options, "showTwitchGifs")) CONFIG.showTwitchGifs = Boolean(options.showTwitchGifs);
       if (Object.prototype.hasOwnProperty.call(options, "enlargeEmotes")) CONFIG.enlargeEmotes = Boolean(options.enlargeEmotes);
       if (Object.prototype.hasOwnProperty.call(options, "gigantifyEmotes")) CONFIG.gigantifyEmotes = Boolean(options.gigantifyEmotes);
 
@@ -4382,6 +4473,11 @@
           metaObj.emotes,
           payload.emotes
         ), dataObj.parts),
+        twitchGifs: normalizeTwitchGifList(firstValue(
+          dataObj.parts,
+          messageObj.parts,
+          payload.parts
+        )),
         pronouns: firstValue(messageObj.pronouns, userObj.pronouns, userObj.pronoun, payload.pronouns, payload.pronoun),
         time: normalizeTime(firstValue(payload.time, payload.timestamp, payload.timeStamp, raw.timeStamp, dataObj.redeemed_at, payload.createdAt)),
         category: getPayloadCategory({
@@ -5761,7 +5857,7 @@
         return;
       }
 
-      if (!mapped.message && !mapped.eventType && !mapped.amount) {
+      if (!mapped.message && !mapped.eventType && !mapped.amount && !(Array.isArray(mapped.twitchGifs) && mapped.twitchGifs.length)) {
         return;
       }
 
@@ -5778,6 +5874,7 @@
           nameColor: mapped.nameColor,
           badges: Array.isArray(mapped.badges) ? mapped.badges.map((badge) => badge.name || badge).join(", ") : "",
           emotes: Array.isArray(mapped.emotes) ? mapped.emotes.length : 0,
+          twitchGifs: Array.isArray(mapped.twitchGifs) ? mapped.twitchGifs.length : 0,
           firstMessage: Boolean(mapped.firstMessage),
           isReply: Boolean(resolveReplyInfo(mapped).isReply),
           replyUser: resolveReplyInfo(mapped).user,
@@ -6088,6 +6185,7 @@
       CONFIG.showPronouns = boolParam(params, "showPronouns", CONFIG.showPronouns);
       CONFIG.showUsername = boolParam(params, "showUsername", CONFIG.showUsername);
       CONFIG.customEmotes = boolParam(params, "customEmotes", CONFIG.customEmotes);
+      CONFIG.showTwitchGifs = boolParam(params, "showTwitchGifs", CONFIG.showTwitchGifs);
       CONFIG.enlargeEmotes = boolParam(params, "enlargeEmotes", CONFIG.enlargeEmotes);
       CONFIG.gigantifyEmotes = boolParam(params, "gigantifyEmotes", CONFIG.gigantifyEmotes);
 
