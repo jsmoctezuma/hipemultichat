@@ -691,7 +691,28 @@
         }
       });
 
-      return message.replace(/[ \t]{2,}/g, " ").trim();
+      const cleaned = message.replace(/[ \t]{2,}/g, " ").trim();
+
+      // Respaldo para payloads donde Streamer.bot entrega un texto descriptivo
+      // distinto al `part.text`, por ejemplo: [Nombre del GIF GIF by Autor].
+      if (/^\[[^\]]*\bGIF\b[^\]]*\]$/i.test(cleaned)) return "";
+      return cleaned;
+    }
+
+    function messageTextWithoutTwitchGifs(messageRaw = "", parts = [], gifs = []) {
+      const normalizedParts = Array.isArray(parts) ? parts : [];
+      const hasGifPart = normalizedParts.some((part) => String(part?.type || "").toLowerCase() === "gif");
+
+      if (hasGifPart) {
+        return normalizedParts
+          .filter((part) => String(part?.type || "").toLowerCase() !== "gif")
+          .map((part) => String(firstValue(part?.text, part?.name, "")))
+          .join("")
+          .replace(/[ \t]{2,}/g, " ")
+          .trim();
+      }
+
+      return stripTwitchGifDescriptions(messageRaw, gifs);
     }
 
     function renderTwitchGifs(gifs = []) {
@@ -2185,7 +2206,7 @@
       const twitchGifs = normalizeTwitchGifList(item.twitchGifs || []);
       const hasTwitchGif = CONFIG.showTwitchGifs && twitchGifs.length > 0;
       const displayMessageRaw = hasTwitchGif
-        ? stripTwitchGifDescriptions(messageRaw, twitchGifs)
+        ? messageTextWithoutTwitchGifs(messageRaw, item.twitchMessageParts, twitchGifs)
         : messageRaw;
       const emotesForDisplay = hasTwitchGif
         ? (Array.isArray(item.emotes) ? item.emotes : []).map((emote) => ({
@@ -2760,7 +2781,7 @@
       if (shouldFollow) scrollToBottom();
     }
 
-    function schedulePreviewHydrationScroll(previewNode, shouldFollow = null) {
+    function schedulePreviewHydrationScroll(previewNode, shouldFollow = null, immediate = false) {
       // v55: los previews de YouTube/Twitch crecen después de insertar el mensaje.
       // En OBS/fuente siempre seguimos abajo.
       // En Dock/Panel seguimos abajo solo si el mensaje nació cuando el usuario estaba al final.
@@ -2774,7 +2795,8 @@
 
       const follow = () => {
         if (!previewNode.isConnected) return;
-        scrollToBottom();
+        if (immediate) scrollToBottomImmediate();
+        else scrollToBottom();
       };
 
       requestAnimationFrame(follow);
@@ -2916,12 +2938,19 @@
       chatStack.insertAdjacentHTML(method, messageTemplate(item));
       const node = CONFIG.scrollDirection === "reversed" ? chatStack.firstElementChild : chatStack.lastElementChild;
 
-      if (node && item.linkPreview && followNewContent) {
+      const hasDeferredMedia = Boolean(
+        item.linkPreview ||
+        (Array.isArray(item.twitchGifs) && item.twitchGifs.length)
+      );
+
+      if (node && hasDeferredMedia && followNewContent) {
         node.dataset.followPreviewScroll = "1";
       }
 
       hydrateExternalAvatars(node);
       hydrateYouTubePreviews(node, item);
+      const twitchGifList = node?.querySelector?.(".twitch-gif-list");
+      if (twitchGifList) schedulePreviewHydrationScroll(twitchGifList, followNewContent, true);
       scheduleHide(node, CONFIG.hideAfter);
       finishNewContentScroll(followNewContent);
     }
@@ -3010,6 +3039,18 @@
     function scrollToBottom() {
       requestAnimationFrame(() => {
         chatScroll.scrollTop = CONFIG.scrollDirection === "reversed" ? 0 : chatScroll.scrollHeight;
+      });
+    }
+
+    function scrollToBottomImmediate() {
+      if (!chatScroll) return;
+
+      const previousInlineBehavior = chatScroll.style.scrollBehavior;
+      chatScroll.style.scrollBehavior = "auto";
+      chatScroll.scrollTop = CONFIG.scrollDirection === "reversed" ? 0 : chatScroll.scrollHeight;
+
+      requestAnimationFrame(() => {
+        chatScroll.style.scrollBehavior = previousInlineBehavior;
       });
     }
 
@@ -3693,6 +3734,9 @@
         pronouns: firstValue(payload.pronouns, payload.pronoun),
         emotes: Array.isArray(payload.emotes) ? payload.emotes : [],
         twitchGifs: normalizeTwitchGifList(firstValue(payload.twitchGifs, payload.gifs, payload.parts)),
+        twitchMessageParts: Array.isArray(payload.twitchMessageParts)
+          ? payload.twitchMessageParts
+          : (Array.isArray(payload.parts) ? payload.parts : []),
         images: normalizeImages(payload),
         linkPreview: normalizeLinkPreview(payload),
         roles: Array.isArray(payload.roles) ? payload.roles : [],
@@ -4478,6 +4522,9 @@
           messageObj.parts,
           payload.parts
         )),
+        twitchMessageParts: Array.isArray(dataObj.parts)
+          ? dataObj.parts
+          : (Array.isArray(messageObj.parts) ? messageObj.parts : (Array.isArray(payload.parts) ? payload.parts : [])),
         pronouns: firstValue(messageObj.pronouns, userObj.pronouns, userObj.pronoun, payload.pronouns, payload.pronoun),
         time: normalizeTime(firstValue(payload.time, payload.timestamp, payload.timeStamp, raw.timeStamp, dataObj.redeemed_at, payload.createdAt)),
         category: getPayloadCategory({
