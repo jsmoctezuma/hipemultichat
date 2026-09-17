@@ -2323,7 +2323,7 @@
       ` : "";
 
       return `
-        <article class="chat-row ${platform}${hasAvatar ? "" : " no-avatar"}${badgeStateClass}${isGigantify ? " powerup-gigantify" : ""}${mentionClass}${firstMessageClass}${replyClass}${bubbleClass}${simpleTextFlow ? " simple-text-flow" : ""}" data-platform="${escapeHtml(platform)}" data-user="${escapeHtml(normalizeChatterToken(item.username || ""))}"${userIdAttr(item)}${messageIdHtmlAttr}>
+        <article class="chat-row ${platform}${hasAvatar ? "" : " no-avatar"}${badgeStateClass}${isGigantify ? " powerup-gigantify" : ""}${hasMedia || hasPreview ? " has-rich-media" : ""}${mentionClass}${firstMessageClass}${replyClass}${bubbleClass}${simpleTextFlow ? " simple-text-flow" : ""}" data-platform="${escapeHtml(platform)}" data-user="${escapeHtml(normalizeChatterToken(item.username || ""))}"${userIdAttr(item)}${messageIdHtmlAttr}>
           ${avatarHtml}
           <div class="message-block">
             ${simpleTextFlow ? `
@@ -2940,7 +2940,8 @@
 
       const hasDeferredMedia = Boolean(
         item.linkPreview ||
-        (Array.isArray(item.twitchGifs) && item.twitchGifs.length)
+        (Array.isArray(item.twitchGifs) && item.twitchGifs.length) ||
+        (Array.isArray(item.images) && item.images.length)
       );
 
       if (node && hasDeferredMedia && followNewContent) {
@@ -2949,8 +2950,12 @@
 
       hydrateExternalAvatars(node);
       hydrateYouTubePreviews(node, item);
-      const twitchGifList = node?.querySelector?.(".twitch-gif-list");
-      if (twitchGifList) schedulePreviewHydrationScroll(twitchGifList, followNewContent, true);
+      const hasResizableMessageMedia = Boolean(
+        node?.querySelector?.(".twitch-gif-list, .message-media")
+      );
+      if (hasResizableMessageMedia) {
+        schedulePreviewHydrationScroll(node.querySelector(".message-block") || node, followNewContent, true);
+      }
       scheduleHide(node, CONFIG.hideAfter);
       finishNewContentScroll(followNewContent);
     }

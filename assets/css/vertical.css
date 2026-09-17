@@ -198,6 +198,17 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
+    /* El avatar identifica la cabecera; no debe flotar al centro de GIFs,
+       imágenes o previews que hagan crecer mucho el mensaje. */
+    .chat-row.has-rich-media {
+      align-items: start;
+    }
+
+    .chat-row.has-rich-media > .avatar,
+    .chat-row.has-rich-media > .avatar-fallback {
+      align-self: start;
+    }
+
     @keyframes rowEnter {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
