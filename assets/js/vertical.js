@@ -2929,6 +2929,10 @@
           "beforeend",
           `<div class="grouped-message-line"><span class="grouped-message-arrow">↳</span><span class="message-content grouped-message-content"${messageIdHtmlAttr}>${renderMessageContent(String(item.message || ""), item.emotes || []).html}</span></div>`
         );
+        const groupedLine = lastMessageBlock.lastElementChild;
+        if (groupedLine?.querySelector?.(".emote-img")) {
+          schedulePreviewHydrationScroll(groupedLine, followNewContent, true);
+        }
         scheduleHide(last, CONFIG.hideAfter);
         finishNewContentScroll(followNewContent);
         return;
@@ -2941,7 +2945,8 @@
       const hasDeferredMedia = Boolean(
         item.linkPreview ||
         (Array.isArray(item.twitchGifs) && item.twitchGifs.length) ||
-        (Array.isArray(item.images) && item.images.length)
+        (Array.isArray(item.images) && item.images.length) ||
+        (Array.isArray(item.emotes) && item.emotes.length)
       );
 
       if (node && hasDeferredMedia && followNewContent) {
@@ -2951,7 +2956,7 @@
       hydrateExternalAvatars(node);
       hydrateYouTubePreviews(node, item);
       const hasResizableMessageMedia = Boolean(
-        node?.querySelector?.(".twitch-gif-list, .message-media")
+        node?.querySelector?.(".twitch-gif-list, .message-media, .emote-img")
       );
       if (hasResizableMessageMedia) {
         schedulePreviewHydrationScroll(node.querySelector(".message-block") || node, followNewContent, true);
