@@ -4366,7 +4366,12 @@
         dataWidget === "viphud"
       );
 
-      if (isSilentInfrastructureEvent || isInternalCustomEvent) {
+      // Un General.Custom que sigue siendo "Custom" en este punto no representa
+      // un evento público de chat compatible. Los puentes válidos de Twitch,
+      // YouTube o Kick ya fueron desempaquetados por flattenCandidatePayload(),
+      // y Gigantify se procesa antes de entrar a este mapper. Evitamos que otros
+      // broadcasts internos con kind:"event" aparezcan como "Usuario Custom".
+      if (isSilentInfrastructureEvent || isInternalCustomEvent || isGeneralCustom) {
         return null;
       }
 
